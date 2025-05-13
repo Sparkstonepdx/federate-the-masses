@@ -1,13 +1,13 @@
-import { RecordData } from "./store";
+import { RecordData } from './store';
 
 type HookFn = (record: RecordData) => void | Promise<void>;
 type HookType =
-  | "beforeCreate"
-  | "afterCreate"
-  | "beforeUpdate"
-  | "afterUpdate"
-  | "beforeDelete"
-  | "afterDelete";
+  | 'beforeCreate'
+  | 'afterCreate'
+  | 'beforeUpdate'
+  | 'afterUpdate'
+  | 'beforeDelete'
+  | 'afterDelete';
 
 export class HooksEngine {
   private hookMap: Map<string, HookFn[]>;

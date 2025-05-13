@@ -1,5 +1,6 @@
-import { HooksEngine } from "./hooks";
-import { RecordData, Store } from "./store";
+import { RecordPage, Schema } from './core-record-types';
+import { HooksEngine } from './hooks';
+import { RecordData, Store } from './store';
 
 let lastId = 0;
 
@@ -14,10 +15,7 @@ export class RecordEngine {
     private hooks: HooksEngine,
   ) {}
 
-  async create<Record extends RecordData>(
-    collectionName: string,
-    data: Partial<Record>,
-  ) {
+  async create<Record extends object>(collectionName: string, data: Partial<Record>) {
     const definition = this.schema.get(collectionName);
     if (!definition) throw new Error(`Unknown collection: ${collectionName}`);
 
@@ -25,17 +23,17 @@ export class RecordEngine {
     const now = new Date().toISOString();
 
     const record = {
-      ...data,
       id,
+      ...data,
       created_at: now,
       modified_at: now,
-    } as RecordData;
+    } as Record & RecordData;
 
-    await this.hooks.run("beforeCreate", collectionName, record);
+    await this.hooks.run('beforeCreate', collectionName, record);
     await this.store.set(collectionName, record.id, record);
-    await this.hooks.run("afterCreate", collectionName, record);
+    await this.hooks.run('afterCreate', collectionName, record);
 
-    return new Record(definition, record);
+    return new Record<Record>(definition, record);
   }
 
   async update(collectionName: string, id: string, data: object) {
@@ -44,8 +42,7 @@ export class RecordEngine {
 
     const existing = await this.store.get(collectionName, id);
 
-    if (!existing || existing.is_deleted)
-      throw new Error(`Record not found: ${id}`);
+    if (!existing || existing.is_deleted) throw new Error(`Record not found: ${id}`);
 
     const updated = {
       ...existing,
@@ -53,9 +50,9 @@ export class RecordEngine {
       modified_at: new Date().toISOString(),
     };
 
-    await this.hooks.run("beforeUpdate", collectionName, updated);
+    await this.hooks.run('beforeUpdate', collectionName, updated);
     await this.store.set(collectionName, updated.id, updated);
-    await this.hooks.run("afterUpdate", collectionName, updated);
+    await this.hooks.run('afterUpdate', collectionName, updated);
     return new Record(definition, updated);
   }
 
@@ -66,39 +63,61 @@ export class RecordEngine {
     existing.is_deleted = true;
     existing.modified_at = new Date().toISOString();
 
-    await this.hooks.run("beforeDelete", collectionName, existing);
+    await this.hooks.run('beforeDelete', collectionName, existing);
     await this.store.set(collectionName, id, existing);
-    await this.hooks.run("afterDelete", collectionName, existing);
+    await this.hooks.run('afterDelete', collectionName, existing);
 
     return existing;
   }
 
-  async get(collectionName: string, id: string) {
+  async get<RecordType extends object = {}>(collectionName: string, id: string) {
     const definition = this.schema.get(collectionName);
     if (!definition) throw new Error(`Unknown collection: ${collectionName}`);
-    const existing = await this.store.get(collectionName, id);
+    const existing = (await this.store.get(collectionName, id)) as RecordType & RecordData;
 
-    return new Record(definition, existing);
+    if (!existing) return null;
+
+    return new Record<RecordType>(definition, existing);
   }
 
-  async list(collectionName: string) {
-    const items = await this.store.list(collectionName);
-    return items;
+  async list<RecordType extends object = {}>(collectionName: string) {
+    const result = (await this.store.list(collectionName)) as RecordPage<RecordType & RecordData>;
+    return {
+      ...result,
+      records: result.records.map(
+        item => new Record<RecordType>(this.schema.get(collectionName), item),
+      ),
+    };
   }
 
-  async expand(record: Record, paths: string[], depth = 3) {
+  async find<RecordType extends object = {}>(collectionName: string, filter: string) {
+    const result = (await this.store.find(collectionName, filter)) as RecordPage<
+      RecordType & RecordData
+    >;
+    return {
+      ...result,
+      records: result.records.map(item => new Record(this.schema.get(collectionName), item)),
+    };
+  }
+
+  async expand<RecordType extends object = {}>(
+    record: Record<RecordType>,
+    paths: string[],
+    depth = 3,
+  ) {
     const expansions = await Promise.all(
-      paths.map(async (path) => {
-        const [fk, ...rest] = path.split(".");
+      paths.map(async path => {
+        const [fk, ...rest] = path.split('.');
+        if (typeof fk !== 'string') throw new Error(`paths must be strings`);
+
         const fieldSchema = record.schema.fields[fk];
         if (!fieldSchema)
           throw new Error(
             `field ${fk} does not exist in record: ${JSON.stringify(record, null, 2)}`,
           );
-        console.log({ fk, key: record.get(fk), data: record.data() });
-        const fieldRecord = this.get(fieldSchema.collection, record.get(fk));
+        const fieldRecord = await this.get(fieldSchema.collection, record.get(fk));
         if (rest.length > 0 && depth > 0) {
-          await this.expand(fieldRecord, [rest.join(".")], depth - 1);
+          await this.expand(fieldRecord, [rest.join('.')], depth - 1);
         }
         return { [fk]: fieldRecord };
       }),
@@ -107,22 +126,22 @@ export class RecordEngine {
   }
 }
 
-export class Record {
+export class Record<RecordType extends object = {}> {
   private dirty: boolean = false;
   public expand: any;
 
   constructor(
-    public schema,
-    private _data,
+    public schema: Schema,
+    private _data: RecordType & RecordData,
   ) {}
 
   get id() {
-    {
-      return this._data.id;
-    }
+    if (!this._data)
+      throw new Error(`tried to access data on unitialized Record: ${JSON.stringify(this)}`);
+    return this._data.id;
   }
 
-  get(key: string) {
+  get(key: keyof RecordType) {
     return this._data[key];
   }
 
@@ -133,6 +152,10 @@ export class Record {
 
   data() {
     return this._data;
+  }
+
+  get collection() {
+    return this.schema.collectionName;
   }
 
   setExpand(e) {

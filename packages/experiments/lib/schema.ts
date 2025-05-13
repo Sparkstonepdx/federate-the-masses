@@ -1,28 +1,35 @@
-import set from "lodash-es/set";
+import set from 'lodash-es/set';
+import { Schema } from './core-record-types';
+
+interface SchemaEnrichment {
+  references?: string[];
+  referencedBy?: Record<string, boolean>;
+}
 
 export class SchemaEngine {
-  constructor(private schema) {
+  constructor(private schema: Record<string, Schema & SchemaEnrichment>) {
     this.computeRelationships();
-    console.dir(this.schema, { depth: 10 });
   }
 
   computeRelationship(key: string, visitedKeys = new Set()) {
     if (visitedKeys.has(key)) return []; //this.schema[key].references ?? [];
-    let references = [];
+    let references: string[] = [];
     visitedKeys.add(key);
-    for (const [field, detail] of Object.entries(this.schema[key].fields)) {
-      if (detail.type !== "relation") continue;
-      let nestedReferences = this.computeRelationship(
-        detail.collection,
-        visitedKeys,
-      ).map((ref) => [detail.collection, ref].join("."));
+    let schema = this.schema[key];
+    if (!schema) throw new Error(`Schema doesn't exist: ${key}`);
 
-      set(this.schema, [key, "referencedBy", detail.collection], true);
+    for (const [field, fieldSchema] of Object.entries(schema.fields)) {
+      if (fieldSchema.type !== 'relation') continue;
+      let nestedReferences = this.computeRelationship(fieldSchema.collection, visitedKeys).map(
+        ref => [fieldSchema.collection, ref].join('.'),
+      );
+
+      set(this.schema, [key, 'referencedBy', fieldSchema.collection], true);
 
       if (nestedReferences.length) {
         references.push(...nestedReferences);
       } else {
-        references.push(detail.collection);
+        references.push(fieldSchema.collection);
       }
     }
     this.schema[key].references = references;
@@ -40,6 +47,4 @@ export class SchemaEngine {
   get(collectionName: string) {
     return this.schema[collectionName];
   }
-
-  async getAllRelationships(collectionName: string) {}
 }

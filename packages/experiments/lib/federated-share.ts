@@ -1,9 +1,12 @@
-import { Hono } from "hono";
-import { set } from "lodash-es";
-import apiRouter from "./request-handler";
-import { Store } from "./store";
-import { generateId, RecordEngine } from "./records";
-import { HooksEngine } from "./hooks";
+import { Hono } from 'hono';
+import { set } from 'lodash-es';
+import apiRouter from './request-handler';
+import { Store } from './store';
+import { generateId, Record, RecordEngine } from './records';
+import { HooksEngine } from './hooks';
+import { buildShareGraph } from './share-dag';
+import { Servers, Shares } from './core-record-types';
+import { SchemaEngine } from './schema';
 
 interface Context {
   auth: { record: { id: string } };
@@ -11,7 +14,7 @@ interface Context {
 
 interface ConstructorOptions {
   store: Store;
-  schema?: any;
+  schema?: SchemaEngine;
   fetch?: any;
   identity: { url: string; public_key: string };
 }
@@ -19,7 +22,7 @@ interface ConstructorOptions {
 export default class Server {
   public schema;
   private store: Store;
-  private fetch;
+  private fetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
   private honoRouter: Hono;
   private identity;
   public records: RecordEngine;
@@ -36,11 +39,11 @@ export default class Server {
 
     const honoRouter = new Hono();
     honoRouter.use(async (c, next) => {
-      c.set("server", this);
+      c.set('server', this);
       await next();
     });
 
-    honoRouter.route("/api", apiRouter);
+    honoRouter.route('/api', apiRouter);
 
     this.honoRouter = honoRouter;
   }
@@ -49,51 +52,49 @@ export default class Server {
     return this.identity;
   }
 
-  async createInviteLink(
-    ctx: Context,
-    collectionName: string,
-    recordId: string,
-  ) {
-    const invite = await this.records.create("invites", {
-      owner_id: ctx.auth.record.id,
-      record_id: recordId,
+  async createInviteLink(ctx: Context, collectionName: string, recordId: string) {
+    const share = await this.records.create<Shares>('shares', {
       collection: collectionName,
+      record_id: recordId,
+    });
+
+    await buildShareGraph(this, share);
+
+    const invite = await this.records.create('invites', {
+      owner_id: ctx.auth.record.id,
+      share: share.id,
       secret: generateId(),
     });
 
-    return `/api/invite/${invite.id}?sec=${invite.get("secret")}`;
+    return `/api/invite/${invite.id}?sec=${invite.get('secret')}`;
   }
 
   async identityServer(origin: string) {
-    let server = await this.store.get("servers", origin);
+    let server = await this.records.get<Servers>('servers', origin);
     if (server) return server;
-    const response = await this.fetch(origin + "/api/identity");
-    console.log({ response, origin });
+    const response = await this.fetch(origin + '/api/identity');
     if (!response.ok || response.status !== 200)
-      throw new Error("Failed to identify server", { cause: response });
+      throw new Error('Failed to identify server', { cause: response });
 
-    server = await response.json();
-    server.id = server.url;
-    console.log({ server });
-    await this.store.set("servers", origin, server);
+    const jsonResponse = await response.json();
+    server = new Record<Servers>(this.schema.get('servers'), jsonResponse);
+    server.set('id', server.get('url'));
+    await this.records.create('servers', server.data());
     return server;
   }
 
   async acceptInvite(ctx: Context, inviteUrlString: string) {
-    const remoteServer = await this.identityServer(
-      new URL(inviteUrlString).origin,
-    );
+    const remoteServer = await this.identityServer(new URL(inviteUrlString).origin);
+    console.log({ remoteServer });
 
     const response = await this.fetch(inviteUrlString);
     if (!response.ok || response.status !== 200) {
-      throw new Error("failed to fetch invite details", { cause: response });
+      throw new Error('failed to fetch invite details', { cause: response });
     }
     const { invite, access_token } = await response.json();
 
-    console.log({ remoteServer });
-
-    return await this.records.create("shares", {
-      server_id: remoteServer!.id,
+    return await this.records.create('shares', {
+      server: remoteServer!.id,
       record_id: invite.record_id,
       collection: invite.collection,
       access_token,
@@ -101,9 +102,11 @@ export default class Server {
   }
 
   async syncShare(share, opts?: { initial?: boolean }) {
-    console.log({ share });
-    await this.records.expand(share, ["server"]);
-    console.dir(share, { depth: 10 });
+    await this.records.expand(share, ['server']);
+
+    console.log(share);
+
+    console.log({ server: share.expand.server });
 
     // request sync and all child records from share collection from other server;
     // save all records and link them to shareId
@@ -111,13 +114,11 @@ export default class Server {
   }
 
   async handleRequest(request) {
-    console.log("handleRequest");
-    console.log(request.url);
     return await this.honoRouter.request(request);
   }
 }
 
-declare module "hono" {
+declare module 'hono' {
   interface ContextVariableMap {
     server: Server;
   }

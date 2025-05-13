@@ -18,5 +18,12 @@
     "@types/lodash-es": "^4.17.12",
     "hono": "^4.7.9",
     "lodash-es": "^4.17.21"
+  },
+  "prettier": {
+    "jsxSingleQuote": true,
+    "bracketSameLine": true,
+    "singleQuote": true,
+    "arrowParens": "avoid",
+    "printWidth": 100
   }
 }
