@@ -5,6 +5,7 @@ export interface RecordData {
   is_deleted?: boolean;
   modified_at: string;
   created_at: string;
+  host: string;
 }
 
 export interface Store {

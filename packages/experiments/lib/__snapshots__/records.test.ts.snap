@@ -1,0 +1,251 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`expand all tasks 1`] = `
+{
+  "collection": "lists",
+  "data": {
+    "id": "list-1",
+    "title": "Project Alpha",
+  },
+  "expand": {
+    "child_list": [
+      {
+        "collection": "lists",
+        "data": {
+          "id": "list-2",
+          "list": "list-1",
+          "title": "Sublist of Alpha",
+        },
+        "expand": undefined,
+        "id": "list-2",
+      },
+    ],
+    "tasks": [
+      {
+        "collection": "tasks",
+        "data": {
+          "content": "Create wireframes and mockups",
+          "id": "task-1",
+          "list": "list-1",
+          "title": "Design homepage",
+        },
+        "expand": {
+          "child": [
+            {
+              "collection": "tasks",
+              "data": {
+                "content": "Convert design into code",
+                "id": "task-2",
+                "list": "list-1",
+                "parent": "task-1",
+                "title": "Develop homepage",
+              },
+              "expand": {
+                "child": [
+                  {
+                    "collection": "tasks",
+                    "data": {
+                      "content": "Internal QA and feedback",
+                      "id": "task-3",
+                      "list": "list-2",
+                      "parent": "task-2",
+                      "title": "Review homepage",
+                    },
+                    "expand": undefined,
+                    "id": "task-3",
+                  },
+                ],
+              },
+              "id": "task-2",
+            },
+          ],
+        },
+        "id": "task-1",
+      },
+      {
+        "collection": "tasks",
+        "data": {
+          "content": "Convert design into code",
+          "id": "task-2",
+          "list": "list-1",
+          "parent": "task-1",
+          "title": "Develop homepage",
+        },
+        "expand": {
+          "child": [
+            {
+              "collection": "tasks",
+              "data": {
+                "content": "Internal QA and feedback",
+                "id": "task-3",
+                "list": "list-2",
+                "parent": "task-2",
+                "title": "Review homepage",
+              },
+              "expand": {
+                "child": [],
+              },
+              "id": "task-3",
+            },
+          ],
+        },
+        "id": "task-2",
+      },
+    ],
+  },
+  "id": "list-1",
+}
+`;
+
+exports[`expand all tasks 2`] = `
+{
+  "collection": "lists",
+  "data": {
+    "id": "list-1",
+    "title": "Project Alpha",
+  },
+  "expand": {
+    "tasks": [
+      {
+        "collection": "tasks",
+        "data": {
+          "content": "Create wireframes and mockups",
+          "id": "task-1",
+          "list": "list-1",
+          "title": "Design homepage",
+        },
+        "expand": {
+          "child": [
+            {
+              "collection": "tasks",
+              "data": {
+                "content": "Convert design into code",
+                "id": "task-2",
+                "list": "list-1",
+                "parent": "task-1",
+                "title": "Develop homepage",
+              },
+              "expand": {
+                "child": [
+                  {
+                    "collection": "tasks",
+                    "data": {
+                      "content": "Internal QA and feedback",
+                      "id": "task-3",
+                      "list": "list-2",
+                      "parent": "task-2",
+                      "title": "Review homepage",
+                    },
+                    "expand": {
+                      "parent": {
+                        "collection": "tasks",
+                        "data": {
+                          "content": "Convert design into code",
+                          "id": "task-2",
+                          "list": "list-1",
+                          "parent": "task-1",
+                          "title": "Develop homepage",
+                        },
+                        "expand": undefined,
+                        "id": "task-2",
+                      },
+                    },
+                    "id": "task-3",
+                  },
+                ],
+              },
+              "id": "task-2",
+            },
+          ],
+        },
+        "id": "task-1",
+      },
+      {
+        "collection": "tasks",
+        "data": {
+          "content": "Convert design into code",
+          "id": "task-2",
+          "list": "list-1",
+          "parent": "task-1",
+          "title": "Develop homepage",
+        },
+        "expand": {
+          "child": [
+            {
+              "collection": "tasks",
+              "data": {
+                "content": "Internal QA and feedback",
+                "id": "task-3",
+                "list": "list-2",
+                "parent": "task-2",
+                "title": "Review homepage",
+              },
+              "expand": {
+                "child": [],
+              },
+              "id": "task-3",
+            },
+          ],
+        },
+        "id": "task-2",
+      },
+    ],
+  },
+  "id": "list-1",
+}
+`;
+
+exports[`expand all tasks with overlap 1`] = `
+{
+  "collection": "tasks",
+  "data": {
+    "content": "Create wireframes and mockups",
+    "id": "task-1",
+    "list": "list-1",
+    "title": "Design homepage",
+  },
+  "expand": {
+    "child": [
+      {
+        "collection": "tasks",
+        "data": {
+          "content": "Convert design into code",
+          "id": "task-2",
+          "list": "list-1",
+          "parent": "task-1",
+          "title": "Develop homepage",
+        },
+        "expand": {
+          "child": [
+            {
+              "collection": "tasks",
+              "data": {
+                "content": "Internal QA and feedback",
+                "id": "task-3",
+                "list": "list-2",
+                "parent": "task-2",
+                "title": "Review homepage",
+              },
+              "expand": undefined,
+              "id": "task-3",
+            },
+          ],
+          "parent": {
+            "collection": "tasks",
+            "data": {
+              "content": "Create wireframes and mockups",
+              "id": "task-1",
+              "list": "list-1",
+              "title": "Design homepage",
+            },
+            "expand": undefined,
+            "id": "task-1",
+          },
+        },
+        "id": "task-2",
+      },
+    ],
+  },
+  "id": "task-1",
+}
+`;

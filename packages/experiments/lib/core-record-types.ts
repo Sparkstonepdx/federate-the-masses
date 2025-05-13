@@ -42,6 +42,12 @@ export interface Servers {
   public_key: string;
 }
 
+export interface Invites {
+  share: string;
+  owner: string;
+  secret: string;
+}
+
 export interface RecordPage<Type> {
   records: Type[];
 }

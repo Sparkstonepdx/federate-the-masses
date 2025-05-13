@@ -19,6 +19,7 @@ export async function buildShareGraph(server: Server, share: Record<Shares>) {
     if (visitedNodes.has(next.recordId)) continue;
     visitedNodes.add(next.recordId);
     const record = await server.records.get(next.collection, next.recordId);
+    if (!record) throw new Error(`record not found: ${JSON.stringify(next)}`);
     await server.records.create<ShareDependencies>('share_dependencies', {
       share: share.id,
       parent_id: next.parent.id,

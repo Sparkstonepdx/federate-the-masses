@@ -8,10 +8,15 @@ export function generateId() {
   return `${lastId++}`;
 }
 
+export function generateURN(collectionName: string, host: string) {
+  return `urn:${collectionName}:${generateId()}@${host}`;
+}
+
 export class RecordEngine {
   constructor(
     private store: Store,
     private schema,
+    private serverUrl,
     private hooks: HooksEngine,
   ) {}
 
@@ -19,14 +24,15 @@ export class RecordEngine {
     const definition = this.schema.get(collectionName);
     if (!definition) throw new Error(`Unknown collection: ${collectionName}`);
 
-    const id = generateId();
+    const id = generateURN(collectionName, this.serverUrl);
     const now = new Date().toISOString();
 
     const record = {
       id,
-      ...data,
+      host: this.serverUrl,
       created_at: now,
       modified_at: now,
+      ...data,
     } as Record & RecordData;
 
     await this.hooks.run('beforeCreate', collectionName, record);
@@ -105,24 +111,48 @@ export class RecordEngine {
     paths: string[],
     depth = 3,
   ) {
-    const expansions = await Promise.all(
-      paths.map(async path => {
-        const [fk, ...rest] = path.split('.');
-        if (typeof fk !== 'string') throw new Error(`paths must be strings`);
+    for (const path of paths) {
+      const [fk, ...rest] = path.split('.');
+      if (typeof fk !== 'string') throw new Error(`paths must be strings`);
 
-        const fieldSchema = record.schema.fields[fk];
-        if (!fieldSchema)
-          throw new Error(
-            `field ${fk} does not exist in record: ${JSON.stringify(record, null, 2)}`,
+      const fieldSchema = record.schema.fields[fk];
+      if (!fieldSchema) {
+        throw new Error(`field ${fk} does not exist in record: ${JSON.stringify(record, null, 2)}`);
+      }
+
+      if (fieldSchema.type !== 'relation') throw new Error('can only expand relation fields');
+
+      let existingExpand = record?.expand?.[fk];
+      let queue: (Record<any> | null)[] = [];
+
+      // if we've already expanded this node, lets add onto it
+      if (existingExpand) {
+        queue = Array.isArray(existingExpand) ? existingExpand : [existingExpand];
+      } else {
+        if (fieldSchema.via) {
+          const page = await this.find(
+            fieldSchema.collection,
+            `${fieldSchema.via} = '${record.id}'`,
           );
-        const fieldRecord = await this.get(fieldSchema.collection, record.get(fk));
-        if (rest.length > 0 && depth > 0) {
-          await this.expand(fieldRecord, [rest.join('.')], depth - 1);
+          queue = page.records;
+        } else {
+          const fieldRecord = await this.get(
+            fieldSchema.collection,
+            record.get(fk as any) as string,
+          );
+          queue = [fieldRecord];
         }
-        return { [fk]: fieldRecord };
-      }),
-    );
-    record.setExpand(Object.assign(...expansions));
+
+        queue = queue.filter(Boolean);
+      }
+
+      if (rest.length > 0 && depth > 0) {
+        let subpath = rest.join('.');
+        await Promise.all(queue.map(fieldRecord => this.expand(fieldRecord, [subpath], depth - 1)));
+      }
+      record.expand ??= {};
+      record.expand[fk] = fieldSchema.via ? queue : queue[0];
+    }
   }
 }
 
@@ -156,6 +186,15 @@ export class Record<RecordType extends object = {}> {
 
   get collection() {
     return this.schema.collectionName;
+  }
+
+  toJSON() {
+    return {
+      collection: this.collection,
+      id: this.id,
+      data: this.data(),
+      expand: this.expand,
+    };
   }
 
   setExpand(e) {
