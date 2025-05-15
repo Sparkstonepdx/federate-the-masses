@@ -1,4 +1,5 @@
 import { RecordPage } from './core-record-types';
+import { evaluateFilter } from './sql-filter';
 
 export interface RecordData {
   id: string;
@@ -14,32 +15,6 @@ export interface Store {
   list<Record>(CollectionName: string): Promise<RecordPage<Record & RecordData>>;
   find<Record>(collectionName: string, filter: string): Promise<RecordPage<Record & RecordData>>;
   delete(collectionName: string, id: string): Promise<void>;
-}
-
-function evaluateFilter(obj: any, filter: string) {
-  const operators = {
-    '=': '===',
-    '!=': '!==',
-    '>': '>',
-    '<': '<',
-    '>=': '>=',
-    '<=': '<=',
-  };
-
-  const regex = new RegExp(
-    `^\\s*([a-zA-Z_][a-zA-Z0-9_]*)\\s*(${Object.keys(operators)
-      .map(op => op.replace(/([=<>!])/g, '\\$1'))
-      .join('|')})\\s*(.+?)\\s*$`,
-  );
-
-  const match = filter.match(regex);
-  if (!match) throw new Error('Invalid filter expression');
-
-  const [, key, op, valueRaw] = match;
-  const jsOp = operators[op];
-  const value = JSON.parse(valueRaw.replace(/^'(.+)'$/, '"$1"')); // parse numbers, booleans, and quoted strings
-
-  return Function('obj', `return obj["${key}"] ${jsOp} ${JSON.stringify(value)};`)(obj);
 }
 
 export class MemoryStore implements Store {
@@ -78,6 +53,17 @@ export class MemoryStore implements Store {
     return {
       records: results.filter(item => evaluateFilter(item, filter)),
     };
+  }
+
+  dump() {
+    let result = {};
+    for (const [collectionName, recordMap] of this.db) {
+      result[collectionName] = {};
+      for (const [id, record] of recordMap) {
+        result[collectionName][id] = record;
+      }
+    }
+    return result;
   }
 
   delete(collection: string, id: string) {

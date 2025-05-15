@@ -1,6 +1,8 @@
 import { RecordPage, Schema } from './core-record-types';
 import { HooksEngine } from './hooks';
+import { SchemaEngine } from './schema';
 import { RecordData, Store } from './store';
+import { prettyPrint } from './string';
 
 let lastId = 0;
 
@@ -15,65 +17,85 @@ export function generateURN(collectionName: string, host: string) {
 export class RecordEngine {
   constructor(
     private store: Store,
-    private schema,
-    private serverUrl,
-    private hooks: HooksEngine,
+    private schema: SchemaEngine,
+    private serverUrl: string,
+    public hooks: HooksEngine,
   ) {}
 
-  async create<Record extends object>(collectionName: string, data: Partial<Record>) {
-    const definition = this.schema.get(collectionName);
-    if (!definition) throw new Error(`Unknown collection: ${collectionName}`);
+  async create<RecordType extends object>(
+    collectionName: string,
+    data: Partial<RecordType & RecordData>,
+  ) {
+    const recordSchema = this.schema.get(collectionName);
+    if (!recordSchema) throw new Error(`Unknown collection: ${collectionName}`);
 
     const id = generateURN(collectionName, this.serverUrl);
     const now = new Date().toISOString();
 
-    const record = {
+    const recordData = {
       id,
       host: this.serverUrl,
       created_at: now,
       modified_at: now,
       ...data,
-    } as Record & RecordData;
+    } as RecordType & RecordData;
 
-    await this.hooks.run('beforeCreate', collectionName, record);
-    await this.store.set(collectionName, record.id, record);
-    await this.hooks.run('afterCreate', collectionName, record);
+    await this.hooks.run('beforeCreate', collectionName, { recordData, recordSchema });
+    await this.store.set(collectionName, recordData.id, recordData);
+    await this.hooks.run('afterCreate', collectionName, { recordData, recordSchema });
 
-    return new Record<Record>(definition, record);
+    return new Record<RecordType>(recordSchema, recordData);
   }
 
-  async update(collectionName: string, id: string, data: object) {
-    const definition = this.schema.get(collectionName);
-    if (!definition) throw new Error(`Unknown collection: ${collectionName}`);
+  async upsert<RecordType extends object = {}>(collectionName: string, id: string, data: object) {
+    const existing = await this.store.get(collectionName, id);
+    if (!existing) return this.create<RecordType>(collectionName, data);
+    return this.update<RecordType>(collectionName, id, data);
+  }
+
+  async update<RecordType extends object = {}>(
+    collectionName: string,
+    id: string,
+    data: Partial<RecordType & RecordData>,
+  ) {
+    const recordSchema = this.schema.get(collectionName);
+    if (!recordSchema) throw new Error(`Unknown collection: ${collectionName}`);
 
     const existing = await this.store.get(collectionName, id);
 
     if (!existing || existing.is_deleted) throw new Error(`Record not found: ${id}`);
 
-    const updated = {
+    const recordData = {
       ...existing,
       ...data,
       modified_at: new Date().toISOString(),
-    };
+    } as RecordType & RecordData;
 
-    await this.hooks.run('beforeUpdate', collectionName, updated);
-    await this.store.set(collectionName, updated.id, updated);
-    await this.hooks.run('afterUpdate', collectionName, updated);
-    return new Record(definition, updated);
+    await this.hooks.run('beforeUpdate', collectionName, {
+      recordData,
+      recordSchema,
+      previousRecordData: existing,
+    });
+    await this.store.set(collectionName, recordData.id, recordData);
+    await this.hooks.run('afterUpdate', collectionName, {
+      recordData,
+      recordSchema,
+      previousRecordData: existing,
+    });
+    return new Record<RecordType>(recordSchema, recordData);
   }
 
   async delete(collectionName: string, id: string) {
-    const existing = await this.store.get(collectionName, id);
-    if (!existing || existing.is_deleted) return;
+    const recordData = await this.store.get(collectionName, id);
+    if (!recordData || recordData.is_deleted) return;
+    const recordSchema = this.schema.get(collectionName);
+    if (!recordSchema) throw new Error(`Unknown collection: ${collectionName}`);
 
-    existing.is_deleted = true;
-    existing.modified_at = new Date().toISOString();
+    await this.hooks.run('beforeDelete', collectionName, { recordData, recordSchema });
+    await this.store.delete(collectionName, id);
+    await this.hooks.run('afterDelete', collectionName, { recordData, recordSchema });
 
-    await this.hooks.run('beforeDelete', collectionName, existing);
-    await this.store.set(collectionName, id, existing);
-    await this.hooks.run('afterDelete', collectionName, existing);
-
-    return existing;
+    return recordData;
   }
 
   async get<RecordType extends object = {}>(collectionName: string, id: string) {
@@ -106,6 +128,12 @@ export class RecordEngine {
     };
   }
 
+  async findOne<RecordType extends object = {}>(collectionName: string, filter: string) {
+    const result = await this.find<RecordType>(collectionName, filter);
+
+    return result.records[0];
+  }
+
   async expand<RecordType extends object = {}>(
     record: Record<RecordType>,
     paths: string[],
@@ -132,7 +160,7 @@ export class RecordEngine {
         if (fieldSchema.via) {
           const page = await this.find(
             fieldSchema.collection,
-            `${fieldSchema.via} = '${record.id}'`,
+            `${fieldSchema.via} = "${record.id}"`,
           );
           queue = page.records;
         } else {
@@ -195,6 +223,10 @@ export class Record<RecordType extends object = {}> {
       data: this.data(),
       expand: this.expand,
     };
+  }
+
+  toString() {
+    return prettyPrint(this);
   }
 
   setExpand(e) {

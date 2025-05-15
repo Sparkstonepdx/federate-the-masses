@@ -1,9 +1,15 @@
-import { omit } from 'lodash-es';
+import { omit, pick } from 'lodash-es';
 import { Record } from './records';
 
-export function prettyPrint<RecordType extends object = {}>(record?: Record<RecordType> | null) {
+export function prettyPrint<RecordType extends object = {}>(
+  record?: Record<RecordType> | null,
+  pickFields?: string[],
+) {
   if (!record) return `[] ${record}`;
-  let data = omit(record.data(), 'created_at', 'modified_at', 'id');
+  let data: any = omit(record.data(), 'created_at', 'modified_at', 'id');
+  if (pickFields) {
+    data = pick(record.data(), pickFields);
+  }
 
   let prettyData = Object.entries(data).map(([key, value]) => `${key}: ${JSON.stringify(value)}`);
 
@@ -11,5 +17,13 @@ export function prettyPrint<RecordType extends object = {}>(record?: Record<Reco
 }
 
 export function prettyPrintArray(arr: Record[]) {
-  return arr.map(prettyPrint).join('\n');
+  return arr.map(record => prettyPrint(record)).join('\n');
+}
+
+export async function prettyList(promise: Promise<{ records: Record[] }>, pickFields?: string[]) {
+  const result = await promise;
+  return {
+    ...result,
+    records: result.records.map(record => prettyPrint(record, pickFields)),
+  };
 }

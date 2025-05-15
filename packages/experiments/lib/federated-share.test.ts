@@ -3,7 +3,7 @@ import Server from './federated-share';
 import { MemoryStore } from './store';
 import { SchemaEngine } from './schema';
 import systemSchema from './system-schema';
-import { Schema } from './core-record-types';
+import { Schema, Shares } from './core-record-types';
 import { prettyPrint, prettyPrintArray } from './string';
 
 let baseFields = {
@@ -98,7 +98,7 @@ class FakeNetwork {
   };
 }
 
-test('p1@server1 invites p2@server2 to folder a via link', async () => {
+test('can share and accept invite', async () => {
   const network = new FakeNetwork();
 
   const server1 = new Server({
@@ -134,6 +134,96 @@ test('p1@server1 invites p2@server2 to folder a via link', async () => {
   expect(prettyPrint(share)).toMatchInlineSnapshot(
     `"[shares:urn:shares:0@server1.com] host: "server1.com", collection: "folders", record_id: "a", server: "server1.com", access_token: "fake-jwt-token""`,
   );
+});
+
+test('can invite and complete initial sync', async () => {
+  // node setup
+  const network = new FakeNetwork();
+
+  const server1 = new Server({
+    store: new MemoryStore(server1Data),
+    schema: new SchemaEngine(schema),
+    fetch: network.fetch,
+    identity: {
+      url: 'http://server1.com',
+      public_key: '',
+    },
+  });
+
+  const server2 = new Server({
+    fetch: network.fetch,
+    store: new MemoryStore(server2Data),
+    schema: new SchemaEngine(schema),
+    identity: { url: 'http://server2.com', public_key: '' },
+  });
+
+  network.register('http://server1.com', server1);
+  network.register('http://server2.com', server2);
+
+  vi.setSystemTime(new Date(2000, 1, 1, 13));
+
+  const invite = await server1.createInviteLink({ auth: { record: { id: 'p1' } } }, 'folders', 'a');
+
+  let share = await server2.acceptInvite(
+    { auth: { record: { id: 'p2' } } },
+    `http://server1.com${invite}`,
+  );
+
+  await server2.initialSync(share);
+
+  const updatedShare = await server2.records.get<Shares>('shares', share.id);
+
+  expect(updatedShare!.get('last_remote_sync')).toMatchInlineSnapshot(`"2000-02-01T21:00:00.000Z"`);
+
+  const folder = await server2.records.get<{ title: string }>('folders', 'a');
+
+  expect(prettyPrint(folder)).toMatchInlineSnapshot(
+    `"[folders:a] host: "server1.com", name: "Folder A""`,
+  );
+
+  const documents = await server2.records.list('documents');
+  expect(prettyPrintArray(documents.records)).toMatchInlineSnapshot(`
+    "[documents:doc-4] title: "Invoice", folder: "x"
+    [documents:doc-5] title: "Summary", folder: "y"
+    [documents:doc-1] host: "server1.com", title: "Spec Sheet", folder: "a"
+    [documents:doc-2] host: "server1.com", title: "Design Doc", folder: "b"
+    [documents:doc-3] host: "server1.com", title: "Notes", folder: "d""
+  `);
+});
+
+test.only('can complete incremental sync from host after initial sync', async () => {
+  // node setup
+  const network = new FakeNetwork();
+  const server1Store = new MemoryStore(server1Data);
+
+  const server1 = new Server({
+    store: server1Store,
+    schema: new SchemaEngine(schema),
+    fetch: network.fetch,
+    identity: {
+      url: 'http://server1.com',
+      public_key: '',
+    },
+  });
+
+  const server2 = new Server({
+    fetch: network.fetch,
+    store: new MemoryStore(server2Data),
+    schema: new SchemaEngine(schema),
+    identity: { url: 'http://server2.com', public_key: '' },
+  });
+
+  network.register('http://server1.com', server1);
+  network.register('http://server2.com', server2);
+
+  vi.setSystemTime(new Date(2000, 1, 1, 13));
+
+  const invite = await server1.createInviteLink({ auth: { record: { id: 'p1' } } }, 'folders', 'a');
+
+  let share = await server2.acceptInvite(
+    { auth: { record: { id: 'p2' } } },
+    `http://server1.com${invite}`,
+  );
 
   await server2.initialSync(share);
 
@@ -151,4 +241,14 @@ test('p1@server1 invites p2@server2 to folder a via link', async () => {
     [documents:doc-2] host: "server1.com", title: "Design Doc", folder: "b"
     [documents:doc-3] host: "server1.com", title: "Notes", folder: "d""
   `);
+
+  // await server1.records.update('documents', 'doc-1', { title: 'an updated title' });
+
+  // const doc1 = await server2.records.get('documents', 'doc-1');
+
+  // await server2.incrementalSync(share.id);
+
+  // expect(prettyPrint(doc1)).toMatchInlineSnapshot(
+  //   `"[documents:doc-1] host: "server1.com", title: "Spec Sheet", folder: "a""`,
+  // );
 });

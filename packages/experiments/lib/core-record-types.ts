@@ -14,10 +14,15 @@ interface StringField {
   type: 'string';
 }
 
-type SchemaField = (RelationField | StringField) & FieldModifiers;
+interface DatetimeField {
+  type: 'datetime';
+}
+
+type SchemaField = (RelationField | StringField | DatetimeField) & FieldModifiers;
 
 export interface Schema {
   collectionName: string;
+  untrackSharing?: boolean;
   fields: Record<string, SchemaField>;
 }
 
@@ -27,6 +32,7 @@ export interface Shares {
   server: Relation;
   access_token: string;
   subscribing_server: Relation;
+  last_remote_sync: string;
 }
 
 export interface ShareDependencies {
@@ -35,6 +41,13 @@ export interface ShareDependencies {
   parent_collection: string;
   child_id: string;
   child_collection: string;
+}
+
+export interface ShareUpdates {
+  share: string;
+  collection: string;
+  record_id: string;
+  action: string;
 }
 
 export interface Servers {
@@ -50,4 +63,9 @@ export interface Invites {
 
 export interface RecordPage<Type> {
   records: Type[];
+}
+
+export interface ShareSubscribers {
+  subscribing_server: string;
+  share: string;
 }

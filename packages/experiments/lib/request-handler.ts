@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { Invites, ShareDependencies, Shares } from './core-record-types';
+import { Invites, Servers, ShareDependencies, Shares, ShareSubscribers } from './core-record-types';
 
 const app = new Hono();
 export default app;
@@ -37,9 +37,30 @@ app.get('/collections/:collection/records/:id', async c => {
   return c.json(record);
 });
 
-app.get('/share/:share_id/sync/initial', async c => {
+app.post('/share/:share_id/sync/initial', async c => {
   const server = c.get('server');
   const shareId = c.req.param('share_id');
+  const body = await c.req.json();
+
+  console.log({ body });
+
+  // todo: all server communication should be signed with private key so we can check it against the public key
+
+  const subscribingServer = await server.records.upsert<Servers>(
+    'servers',
+    body.subscriber.id,
+    body.subscriber,
+  );
+
+  let shareSubscriber = await server.records.findOne<ShareSubscribers>(
+    'share_subscribers',
+    `share = '${shareId}' and subscribing_server = '${subscribingServer.id}'`,
+  );
+  if (!shareSubscriber)
+    shareSubscriber = await server.records.create<ShareSubscribers>('share_subscribers', {
+      share: shareId,
+      subscribing_server: subscribingServer.id,
+    });
 
   const dependencies = await server.records.find<ShareDependencies>(
     'share_dependencies',
@@ -57,4 +78,12 @@ app.get('/share/:share_id/sync/initial', async c => {
     records,
     dependencies,
   });
+});
+
+app.post('/share/:share_id/sync/incremental', async c => {
+  const server = c.get('server');
+  const shareId = c.req.param('share_id');
+  const body = await c.req.json();
+
+  console.log({ body });
 });

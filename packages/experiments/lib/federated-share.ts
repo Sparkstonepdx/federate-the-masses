@@ -6,6 +6,7 @@ import { HooksEngine } from './hooks';
 import { buildShareGraph } from './share-dag';
 import { Servers, Shares } from './core-record-types';
 import { SchemaEngine } from './schema';
+import { attachShareUpdateTracker } from './share-update-tracker';
 
 interface Context {
   auth: { record: { id: string } };
@@ -25,6 +26,7 @@ export default class Server {
   private honoRouter: Hono;
   private identity: { url: string; public_key: string; host: string };
   public records: RecordEngine;
+  private cleanupFns: Function[] = [];
 
   constructor(constructorOptions: ConstructorOptions) {
     const options = constructorOptions;
@@ -36,6 +38,8 @@ export default class Server {
     this.fetch = options.fetch;
     this.identity = Object.assign(options.identity, { host: url.host, id: url.host });
     this.records = new RecordEngine(this.store, this.schema, this.identity.host, new HooksEngine());
+
+    this.cleanupFns.push(attachShareUpdateTracker(this.records));
 
     const honoRouter = new Hono();
     honoRouter.use(async (c, next) => {
@@ -104,7 +108,12 @@ export default class Server {
 
     const url = new URL(`/api/share/${share.id}/sync/initial`, share.expand.server.get('url'));
 
-    const response = await this.fetch(url);
+    const response = await this.fetch(url, {
+      method: 'post',
+      body: JSON.stringify({
+        subscriber: await this.getIdentity(),
+      }),
+    });
     if (!response.ok) {
       throw new Error(`failed to sync with server: ${share.expand.server.get('url')}`, {
         cause: response,
@@ -112,8 +121,6 @@ export default class Server {
     }
 
     const responseJson = await response.json();
-
-    console.dir({ responseJson }, { depth: 4 });
 
     for (const record of responseJson.dependencies.records) {
       // record.data.server = share.expand.server.id;
@@ -125,13 +132,40 @@ export default class Server {
       await this.records.create(record.collection, record.data);
     }
 
+    await this.records.update<Shares>('shares', share.id, {
+      last_remote_sync: new Date().toISOString(),
+    });
+
     // request sync and all child records from share collection from other server;
     // save all records and link them to shareId
     //
   }
 
+  async incrementalSync(shareId: string) {
+    const share = await this.records.get<Shares>('shares', shareId);
+    if (!share) throw new Error(`failed to load share: ${shareId}`);
+    await this.records.expand(share, ['server']);
+
+    const syncUrl = new URL(`/share/${share.id}/sync/incremental`, share.expand.server.get('url'));
+    syncUrl.searchParams.set('since', share.get('last_remote_sync'));
+
+    const response = await this.fetch(syncUrl, {
+      method: 'post',
+      body: JSON.stringify({ subscriber: await this.getIdentity() }),
+    });
+    if (!response.ok) {
+      throw new Error(`failed to incrementally sync: ${shareId}`, { cause: response });
+    }
+  }
+
   async handleRequest(request: Request) {
     return await this.honoRouter.request(request);
+  }
+
+  destroy() {
+    for (const fn of this.cleanupFns) {
+      fn();
+    }
   }
 }
 
