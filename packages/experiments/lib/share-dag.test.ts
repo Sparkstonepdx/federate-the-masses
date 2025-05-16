@@ -1,5 +1,5 @@
 import { expect, test, vi } from 'vitest';
-import { buildShareGraph } from './share-dag';
+import { createDependencyTree } from './share-dag';
 import Server from './federated-share';
 import { MemoryStore } from './store';
 import systemSchema from './system-schema';
@@ -19,7 +19,7 @@ test('dep list-1', async () => {
     collection: 'lists',
     record_id: 'list-1',
   });
-  await buildShareGraph(
+  await createDependencyTree(
     server.records,
     {
       collection: share.get('collection'),
@@ -57,7 +57,7 @@ test('dep list-2', async () => {
     collection: 'lists',
     record_id: 'list-2',
   });
-  await buildShareGraph(
+  await createDependencyTree(
     server.records,
     {
       collection: share.get('collection'),
@@ -90,7 +90,7 @@ test('dep list-3', async () => {
     collection: 'lists',
     record_id: 'list-3',
   });
-  await buildShareGraph(
+  await createDependencyTree(
     server.records,
     {
       collection: share.get('collection'),
@@ -123,7 +123,7 @@ test('dep task-3', async () => {
     collection: 'tasks',
     record_id: 'task-3',
   });
-  await buildShareGraph(
+  await createDependencyTree(
     server.records,
     {
       collection: share.get('collection'),

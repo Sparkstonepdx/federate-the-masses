@@ -191,7 +191,7 @@ test('can invite and complete initial sync', async () => {
   `);
 });
 
-test.only('can complete incremental sync from host after initial sync', async () => {
+test('can complete incremental sync from host after initial sync', async () => {
   // node setup
   const network = new FakeNetwork();
   const server1Store = new MemoryStore(server1Data);

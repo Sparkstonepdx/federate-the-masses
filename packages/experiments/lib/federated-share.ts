@@ -3,7 +3,7 @@ import apiRouter from './request-handler';
 import { Store } from './store';
 import { generateId, Record, RecordEngine } from './records';
 import { HooksEngine } from './hooks';
-import { buildShareGraph } from './share-dag';
+import { createDependencyTree } from './share-dag';
 import { Servers, Shares } from './core-record-types';
 import { SchemaEngine } from './schema';
 import { attachShareUpdateTracker } from './share-update-tracker';
@@ -62,7 +62,7 @@ export default class Server {
       record_id: recordId,
     });
 
-    await buildShareGraph(
+    await createDependencyTree(
       this.records,
       {
         collection: share.get('collection'),

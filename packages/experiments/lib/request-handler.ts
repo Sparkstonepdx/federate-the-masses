@@ -42,8 +42,6 @@ app.post('/share/:share_id/sync/initial', async c => {
   const shareId = c.req.param('share_id');
   const body = await c.req.json();
 
-  console.log({ body });
-
   // todo: all server communication should be signed with private key so we can check it against the public key
 
   const subscribingServer = await server.records.upsert<Servers>(

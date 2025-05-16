@@ -10,7 +10,7 @@ interface QueuedItem {
   relation_type: 'via' | 'field';
 }
 
-export async function buildShareGraph(
+export async function createDependencyTree(
   records: RecordEngine,
   item: QueuedItem,
   shareId: string,
@@ -18,8 +18,6 @@ export async function buildShareGraph(
 ) {
   let visitedNodes = new Set();
   let queue: QueuedItem[] = [item];
-  let i = 0;
-  console.dir({ item }, { depth: 3 });
 
   for (const next of queue) {
     if (visitedNodes.has(next.recordId)) continue;
@@ -82,4 +80,38 @@ async function getReferencedRecords(records: RecordEngine, record: Record<any>) 
     });
   }
   return queueItems;
+}
+
+export async function deleteDependencyTree(
+  records: RecordEngine,
+  record: Record<ShareDependencies>,
+) {
+  let children = await records.find<ShareDependencies>(
+    'share_dependencies',
+    `parent_id = '${record.get('child_id')}' and share = '${record.get('share')}' `,
+  );
+  await records.delete('share_dependencies', record.id);
+  await records.create<ShareUpdates>('share_updates', {
+    share: record.get('share'),
+    collection: record.get('child_collection'),
+    record_id: record.get('child_id'),
+    action: 'delete',
+  });
+
+  while (children.records.length > 0) {
+    for (const child of children.records) {
+      await records.delete('share_dependencies', child.id);
+      await records.create<ShareUpdates>('share_updates', {
+        share: child.get('share'),
+        collection: child.get('child_collection'),
+        record_id: child.get('child_id'),
+        action: 'delete',
+      });
+    }
+    let childIds = children.records.map(child => child.get('child_id'));
+    children = await records.find<ShareDependencies>(
+      'share_dependencies',
+      `share = '${record.get('share')}' and parent_id in ('${childIds.join(`', '`)}')`,
+    );
+  }
 }

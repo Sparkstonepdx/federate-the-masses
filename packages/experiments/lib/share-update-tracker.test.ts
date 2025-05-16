@@ -51,7 +51,10 @@ test('when creating a shared record, update the relevant records', async () => {
 
   vi.setSystemTime(new Date(2000, 1, 2, 13));
 
-  const document = await records.create('documents', { folder: 'b', title: 'new doc in folder b' });
+  const document = await records.create<{ folder: string; title: string }>('documents', {
+    folder: 'b',
+    title: 'new doc in folder b',
+  });
 
   vi.setSystemTime(new Date(2000, 1, 3, 13));
 
