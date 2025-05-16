@@ -1,6 +1,7 @@
-import { ShareDependencies, ShareUpdates } from './core-record-types';
+import { SchemaField, ShareDependencies, ShareUpdates } from './core-record-types';
 import { BaseParams, HookFnParams } from './hooks';
 import { Record, RecordEngine } from './records';
+import { buildShareGraph } from './share-dag';
 import { prettyPrint } from './string';
 
 export function attachShareUpdateTracker(records: RecordEngine) {
@@ -17,17 +18,28 @@ export function attachShareUpdateTracker(records: RecordEngine) {
   };
 }
 
+type Reference = { relation_type: 'via' | 'field'; field: string; record: Record<any> };
+
 export async function findRelatedRecords<RecordType extends object = {}>(
   records: RecordEngine,
   record: Record<RecordType>,
   ignoreViaRecords?: boolean,
 ) {
-  let references: Record<any>[] = [];
+  let references: Reference[] = [];
   for (const [fieldName, fieldSchema] of Object.entries(record.schema.fields)) {
     if (fieldSchema.type !== 'relation') continue;
     if (fieldSchema.via && !ignoreViaRecords) {
       const result = await records.find(fieldSchema.collection, `${fieldName} = '${record.id}'`);
-      references.push(...result.records);
+      references.push(
+        ...result.records.map(
+          record =>
+            ({
+              record,
+              relation_type: 'via',
+              field: fieldSchema.via as string,
+            }) as Reference,
+        ),
+      );
       continue;
     }
     if (record.get(fieldName as keyof RecordType)) {
@@ -39,7 +51,7 @@ export async function findRelatedRecords<RecordType extends object = {}>(
         throw new Error(
           `referenced record not found: ${prettyPrint(record)} ${JSON.stringify(fieldName)}`,
         );
-      references.push(result);
+      references.push({ record: result, relation_type: 'field', field: fieldName });
     }
   }
   return references;
@@ -101,21 +113,63 @@ export async function afterCreate(records: RecordEngine, params: BaseParams) {
 export async function afterUpdate(records: RecordEngine, params: HookFnParams<any>['afterUpdate']) {
   if (params.recordSchema.untrackSharing) return;
 
-  const record = new Record(params.recordSchema, params.recordData);
+  const record = new Record<any>(params.recordSchema, params.recordData);
   const relatedRecords = await findRelatedRecords(records, record);
 
-  const changedFields = new Set();
+  const changedFields = new Set<{ name: string; schema: SchemaField }>();
 
-  for (const [fieldName, fieldSchema] of Object.entries(params.recordSchema.fields)) {
-    if (fieldSchema.type !== 'relation') continue;
-    if (params.recordData[fieldName] !== params.previousRecordData[fieldName]) {
-      changedFields.add(fieldName);
+  for (const [name, schema] of Object.entries(params.recordSchema.fields)) {
+    if (schema.type !== 'relation') continue;
+    if (params.recordData[name] !== params.previousRecordData[name]) {
+      changedFields.add({ name, schema });
     }
   }
 
-  const parentsDeps = await records.find('share_dependencies', `child_id = '${record.id}'`);
+  const existingParentDeps = await records.find<ShareDependencies>(
+    'share_dependencies',
+    `child_id = '${record.id}'`,
+  );
 
-  console.dir({ changedFields, parentsDeps }, { depth: 10 });
+  console.dir({ changedFields, existingParentDeps }, { depth: 10 });
+
+  // if we removed a field that linked it to a parent, we should delete the tree
+  for (const parentDep of existingParentDeps.records) {
+    for (const changedField of changedFields) {
+      if (
+        parentDep.get('relation_type') === 'via' &&
+        changedField.name === parentDep.get('field')
+      ) {
+        await deleteDependencyTree(records, parentDep);
+      }
+    }
+  }
+
+  for (const changedField of changedFields) {
+    if (!record.get(changedField.name as string)) continue;
+    let newShareDeps = await records.find<ShareDependencies>(
+      'share_dependencies',
+      `child_id = '${record.get(changedField.name)}'`,
+    );
+    console.dir({ newShareDeps }, { depth: 10 });
+    for (const dep of newShareDeps.records) {
+      console.dir({ dep }, { depth: 5 });
+      const parentRecord = await records.get<any>(dep.get('child_collection'), dep.get('child_id'));
+      if (!parentRecord) throw new Error('failed to fetch referenced record');
+      await buildShareGraph(
+        records,
+        {
+          collection: record.collection,
+          recordId: record.id,
+          field: changedField.name,
+          relation_type: 'via',
+          parent: parentRecord,
+        },
+        dep.get('share'),
+        true,
+      );
+      // await createDependencyTree(records, dep);
+    }
+  }
 
   // update direct references
   // const share_dependencies = await records.find<ShareDependencies>(
@@ -178,3 +232,5 @@ async function deleteDependencyTree(records: RecordEngine, record: Record<ShareD
     );
   }
 }
+
+async function createDependencyTree(records: RecordEngine, record: Record<ShareDependencies>) {}

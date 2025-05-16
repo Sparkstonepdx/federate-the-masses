@@ -5,6 +5,7 @@ import { RecordData, Store } from './store';
 import { prettyPrint } from './string';
 
 let lastId = 0;
+type Expand<T> = T extends infer O ? { [K in keyof O]: O[K] } : never;
 
 export function generateId() {
   return `${lastId++}`;
@@ -24,7 +25,7 @@ export class RecordEngine {
 
   async create<RecordType extends object>(
     collectionName: string,
-    data: Partial<RecordType & RecordData>,
+    data: Expand<Partial<RecordType & RecordData>>,
   ) {
     const recordSchema = this.schema.get(collectionName);
     if (!recordSchema) throw new Error(`Unknown collection: ${collectionName}`);

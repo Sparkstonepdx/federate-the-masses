@@ -62,7 +62,17 @@ export default class Server {
       record_id: recordId,
     });
 
-    await buildShareGraph(this, share);
+    await buildShareGraph(
+      this.records,
+      {
+        collection: share.get('collection'),
+        recordId: share.get('record_id'),
+        relation_type: 'field',
+        parent: share,
+        field: 'child_id',
+      },
+      share.id,
+    );
 
     const invite = await this.records.create('invites', {
       owner_id: ctx.auth.record.id,

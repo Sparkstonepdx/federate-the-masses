@@ -1,62 +1,85 @@
-import { ShareDependencies, Shares } from './core-record-types';
+import { ShareDependencies, Shares, ShareUpdates } from './core-record-types';
 import type Server from './federated-share';
-import { Record } from './records';
+import { Record, RecordEngine } from './records';
 
 interface QueuedItem {
   collection: string;
   recordId: string;
   parent: Record<any>;
+  field?: string;
+  relation_type: 'via' | 'field';
 }
 
-export async function buildShareGraph(server: Server, share: Record<Shares>) {
+export async function buildShareGraph(
+  records: RecordEngine,
+  item: QueuedItem,
+  shareId: string,
+  createUpdates: boolean = false,
+) {
   let visitedNodes = new Set();
-  let collection = share.get('collection');
-  let recordId = share.get('record_id');
-  let queue: QueuedItem[] = [{ collection, recordId, parent: share }];
+  let queue: QueuedItem[] = [item];
   let i = 0;
+  console.dir({ item }, { depth: 3 });
 
   for (const next of queue) {
     if (visitedNodes.has(next.recordId)) continue;
     visitedNodes.add(next.recordId);
-    const record = await server.records.get(next.collection, next.recordId);
+    const record = await records.get(next.collection, next.recordId);
     if (!record) throw new Error(`record not found: ${JSON.stringify(next)}`);
-    await server.records.create<ShareDependencies>('share_dependencies', {
-      share: share.id,
+    await records.create<ShareDependencies>('share_dependencies', {
+      share: shareId,
       parent_id: next.parent.id,
       parent_collection: next.parent.collection,
       child_id: record.id,
       child_collection: record.collection,
+      field: next.field,
+      relation_type: next.relation_type,
     });
-    const referencedRecords = await getReferencedRecords(server, record);
+    if (createUpdates) {
+      await records.create<ShareUpdates>('share_updates', {
+        share: shareId,
+        collection: record.collection,
+        record_id: record.id,
+        action: 'create',
+      });
+    }
+    const referencedRecords = await getReferencedRecords(records, record);
     queue.push(...referencedRecords);
   }
 }
 
-async function getReferencedRecords(server: Server, record: Record<any>) {
-  let records: QueuedItem[] = [];
+async function getReferencedRecords(records: RecordEngine, record: Record<any>) {
+  let queueItems: QueuedItem[] = [];
   for (const [fieldName, fieldSchema] of Object.entries(record.schema.fields)) {
     if (fieldSchema.type !== 'relation') continue;
     if (fieldSchema.via) {
-      const result = await server.records.find(
+      const result = await records.find(
         fieldSchema.collection,
         `${fieldSchema.via} = '${record.id}'`,
       );
-      records.push(
-        ...result.records.map(r => ({
-          collection: r.collection,
-          recordId: r.id,
-          parent: record,
-        })),
+      queueItems.push(
+        ...result.records.map(
+          r =>
+            ({
+              collection: r.collection,
+              field: fieldSchema.via,
+              relation_type: 'via',
+              recordId: r.id,
+              parent: record,
+            }) as QueuedItem,
+        ),
       );
       continue;
     }
 
     if (!record[fieldName]) continue;
-    records.push({
+    queueItems.push({
       collection: fieldSchema.collection,
       recordId: record[fieldName],
+      field: fieldName,
+      relation_type: 'field',
       parent: record,
     });
   }
-  return records;
+  return queueItems;
 }

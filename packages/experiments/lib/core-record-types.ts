@@ -18,7 +18,7 @@ interface DatetimeField {
   type: 'datetime';
 }
 
-type SchemaField = (RelationField | StringField | DatetimeField) & FieldModifiers;
+export type SchemaField = (RelationField | StringField | DatetimeField) & FieldModifiers;
 
 export interface Schema {
   collectionName: string;
@@ -41,6 +41,8 @@ export interface ShareDependencies {
   parent_collection: string;
   child_id: string;
   child_collection: string;
+  field: string;
+  relation_type: 'via' | 'field';
 }
 
 export interface ShareUpdates {

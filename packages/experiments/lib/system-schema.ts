@@ -44,6 +44,8 @@ const systemSchema: Record<string, Schema> = {
       parent_collection: { type: 'string' },
       child_id: { type: 'string' },
       child_collection: { type: 'string' },
+      field: { type: 'string' },
+      relation_type: { type: 'string' },
     },
   },
   // remote servers subscribed to a local share or

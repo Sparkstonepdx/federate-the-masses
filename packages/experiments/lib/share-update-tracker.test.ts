@@ -55,30 +55,45 @@ test('when creating a shared record, update the relevant records', async () => {
 
   vi.setSystemTime(new Date(2000, 1, 3, 13));
 
-  expect((await findRelatedRecords(records, document)).toString()).toMatchInlineSnapshot(
-    `"[folders:b] host: "server1.com", name: "Folder B", parent: "a""`,
+  expect(await findRelatedRecords(records, document)).toMatchInlineSnapshot(
+    `
+    [
+      {
+        "field": "folder",
+        "record": {
+          "collection": "folders",
+          "data": {
+            "host": "server1.com",
+            "id": "b",
+            "name": "Folder B",
+            "parent": "a",
+          },
+          "expand": undefined,
+          "id": "b",
+        },
+        "relation_type": "field",
+      },
+    ]
+  `,
   );
 
   expect(await prettyList(records.list('share_updates'), ['record_id', 'action']))
     .toMatchInlineSnapshot(`
       {
-        "records": [
-          "[share_updates:urn:share_updates:2@test-url.com] record_id: "urn:documents:0@test-url.com", action: "create"",
-        ],
+        "records": [],
       }
     `);
 
   expect(await prettyList(records.list('share_dependencies'))).toMatchInlineSnapshot(`
     {
       "records": [
-        "[share_dependencies:urn:share_dependencies:1@server1.com] child_collection: "folders", child_id: "a", host: "server1.com", parent_collection: "shares", parent_id: "urn:shares:0@server1.com", share: "urn:shares:0@server1.com"",
-        "[share_dependencies:urn:share_dependencies:2@server1.com] child_collection: "folders", child_id: "b", host: "server1.com", parent_collection: "folders", parent_id: "a", share: "urn:shares:0@server1.com"",
-        "[share_dependencies:urn:share_dependencies:3@server1.com] child_collection: "folders", child_id: "c", host: "server1.com", parent_collection: "folders", parent_id: "a", share: "urn:shares:0@server1.com"",
-        "[share_dependencies:urn:share_dependencies:4@server1.com] child_collection: "documents", child_id: "doc-1", host: "server1.com", parent_collection: "folders", parent_id: "a", share: "urn:shares:0@server1.com"",
-        "[share_dependencies:urn:share_dependencies:5@server1.com] child_collection: "folders", child_id: "d", host: "server1.com", parent_collection: "folders", parent_id: "b", share: "urn:shares:0@server1.com"",
-        "[share_dependencies:urn:share_dependencies:6@server1.com] child_collection: "documents", child_id: "doc-2", host: "server1.com", parent_collection: "folders", parent_id: "b", share: "urn:shares:0@server1.com"",
-        "[share_dependencies:urn:share_dependencies:7@server1.com] child_collection: "documents", child_id: "doc-3", host: "server1.com", parent_collection: "folders", parent_id: "d", share: "urn:shares:0@server1.com"",
-        "[share_dependencies:urn:share_dependencies:1@test-url.com] host: "test-url.com", share: "urn:shares:0@server1.com", parent_collection: "folders", parent_id: "b", child_collection: "documents", child_id: "urn:documents:0@test-url.com"",
+        "[share_dependencies:urn:share_dependencies:1@server1.com] child_collection: "folders", child_id: "a", field: "child_id", host: "server1.com", parent_collection: "shares", parent_id: "urn:shares:0@server1.com", relation_type: "field", share: "urn:shares:0@server1.com"",
+        "[share_dependencies:urn:share_dependencies:2@server1.com] child_collection: "folders", child_id: "b", field: "parent", host: "server1.com", parent_collection: "folders", parent_id: "a", relation_type: "via", share: "urn:shares:0@server1.com"",
+        "[share_dependencies:urn:share_dependencies:3@server1.com] child_collection: "folders", child_id: "c", field: "parent", host: "server1.com", parent_collection: "folders", parent_id: "a", relation_type: "via", share: "urn:shares:0@server1.com"",
+        "[share_dependencies:urn:share_dependencies:4@server1.com] child_collection: "documents", child_id: "doc-1", field: "folder", host: "server1.com", parent_collection: "folders", parent_id: "a", relation_type: "via", share: "urn:shares:0@server1.com"",
+        "[share_dependencies:urn:share_dependencies:5@server1.com] child_collection: "folders", child_id: "d", field: "parent", host: "server1.com", parent_collection: "folders", parent_id: "b", relation_type: "via", share: "urn:shares:0@server1.com"",
+        "[share_dependencies:urn:share_dependencies:6@server1.com] child_collection: "documents", child_id: "doc-2", field: "folder", host: "server1.com", parent_collection: "folders", parent_id: "b", relation_type: "via", share: "urn:shares:0@server1.com"",
+        "[share_dependencies:urn:share_dependencies:7@server1.com] child_collection: "documents", child_id: "doc-3", field: "folder", host: "server1.com", parent_collection: "folders", parent_id: "d", relation_type: "via", share: "urn:shares:0@server1.com"",
       ],
     }
   `);
@@ -106,7 +121,7 @@ test('when deleting a shared record, update the relevant records', async () => {
   ).toMatchInlineSnapshot(`
     {
       "records": [
-        "[share_updates:urn:share_updates:3@test-url.com] share: "urn:shares:0@server1.com", record_id: "doc-2", action: "delete"",
+        "[share_updates:urn:share_updates:1@test-url.com] share: "urn:shares:0@server1.com", record_id: "doc-2", action: "delete"",
       ],
     }
   `);
@@ -137,9 +152,9 @@ test('when deleting a shared record, update the relevant records', async () => {
   ).toMatchInlineSnapshot(`
     {
       "records": [
-        "[share_updates:urn:share_updates:4@test-url.com] record_id: "b", action: "delete"",
-        "[share_updates:urn:share_updates:5@test-url.com] record_id: "d", action: "delete"",
-        "[share_updates:urn:share_updates:6@test-url.com] record_id: "doc-3", action: "delete"",
+        "[share_updates:urn:share_updates:2@test-url.com] record_id: "b", action: "delete"",
+        "[share_updates:urn:share_updates:3@test-url.com] record_id: "d", action: "delete"",
+        "[share_updates:urn:share_updates:4@test-url.com] record_id: "doc-3", action: "delete"",
       ],
     }
   `);
@@ -183,7 +198,57 @@ test('update a record that is currently shared', async () => {
   expect(await prettyList(records.list('share_updates'), ['share', 'action', 'record_id']))
     .toMatchInlineSnapshot(`
       {
-        "records": [],
+        "records": [
+          "[share_updates:urn:share_updates:5@test-url.com] share: "urn:shares:0@server1.com", action: "delete", record_id: "b"",
+          "[share_updates:urn:share_updates:6@test-url.com] share: "urn:shares:0@server1.com", action: "delete", record_id: "d"",
+          "[share_updates:urn:share_updates:7@test-url.com] share: "urn:shares:0@server1.com", action: "delete", record_id: "doc-2"",
+          "[share_updates:urn:share_updates:8@test-url.com] share: "urn:shares:0@server1.com", action: "delete", record_id: "doc-3"",
+        ],
+      }
+    `);
+  expect(await prettyList(records.list('share_dependencies'), ['parent_id', 'child_id']))
+    .toMatchInlineSnapshot(`
+    {
+      "records": [
+        "[share_dependencies:urn:share_dependencies:1@server1.com] parent_id: "urn:shares:0@server1.com", child_id: "a"",
+        "[share_dependencies:urn:share_dependencies:3@server1.com] parent_id: "a", child_id: "c"",
+        "[share_dependencies:urn:share_dependencies:4@server1.com] parent_id: "a", child_id: "doc-1"",
+      ],
+    }
+  `);
+
+  vi.setSystemTime(new Date(2000, 1, 3, 13));
+
+  await records.update('folders', 'b', { parent: 'c' });
+
+  expect(
+    await prettyList(
+      records.find('share_updates', `created_at > '${new Date(2000, 1, 3, 12).toISOString()}'`),
+      ['share', 'action', 'record_id'],
+    ),
+  ).toMatchInlineSnapshot(`
+    {
+      "records": [
+        "[share_updates:urn:share_updates:10@test-url.com] share: "urn:shares:0@server1.com", action: "create", record_id: "b"",
+        "[share_updates:urn:share_updates:12@test-url.com] share: "urn:shares:0@server1.com", action: "create", record_id: "d"",
+        "[share_updates:urn:share_updates:14@test-url.com] share: "urn:shares:0@server1.com", action: "create", record_id: "doc-2"",
+        "[share_updates:urn:share_updates:16@test-url.com] share: "urn:shares:0@server1.com", action: "create", record_id: "doc-3"",
+      ],
+    }
+  `);
+
+  expect(await prettyList(records.list('share_dependencies'), ['parent_id', 'child_id']))
+    .toMatchInlineSnapshot(`
+      {
+        "records": [
+          "[share_dependencies:urn:share_dependencies:1@server1.com] parent_id: "urn:shares:0@server1.com", child_id: "a"",
+          "[share_dependencies:urn:share_dependencies:3@server1.com] parent_id: "a", child_id: "c"",
+          "[share_dependencies:urn:share_dependencies:4@server1.com] parent_id: "a", child_id: "doc-1"",
+          "[share_dependencies:urn:share_dependencies:9@test-url.com] parent_id: "c", child_id: "b"",
+          "[share_dependencies:urn:share_dependencies:11@test-url.com] parent_id: "b", child_id: "d"",
+          "[share_dependencies:urn:share_dependencies:13@test-url.com] parent_id: "b", child_id: "doc-2"",
+          "[share_dependencies:urn:share_dependencies:15@test-url.com] parent_id: "d", child_id: "doc-3"",
+        ],
       }
     `);
 });
@@ -260,77 +325,91 @@ const currentState = {
       child_collection: 'folders',
       child_id: 'a',
       created_at: '2000-02-01T21:00:00.000Z',
+      field: 'child_id',
       host: 'server1.com',
       id: 'urn:share_dependencies:1@server1.com',
       modified_at: '2000-02-01T21:00:00.000Z',
       parent_collection: 'shares',
       parent_id: 'urn:shares:0@server1.com',
+      relation_type: 'field',
       share: 'urn:shares:0@server1.com',
     },
     'urn:share_dependencies:2@server1.com': {
       child_collection: 'folders',
       child_id: 'b',
       created_at: '2000-02-01T21:00:00.000Z',
+      field: 'parent',
       host: 'server1.com',
       id: 'urn:share_dependencies:2@server1.com',
       modified_at: '2000-02-01T21:00:00.000Z',
       parent_collection: 'folders',
       parent_id: 'a',
+      relation_type: 'via',
       share: 'urn:shares:0@server1.com',
     },
     'urn:share_dependencies:3@server1.com': {
       child_collection: 'folders',
       child_id: 'c',
       created_at: '2000-02-01T21:00:00.000Z',
+      field: 'parent',
       host: 'server1.com',
       id: 'urn:share_dependencies:3@server1.com',
       modified_at: '2000-02-01T21:00:00.000Z',
       parent_collection: 'folders',
       parent_id: 'a',
+      relation_type: 'via',
       share: 'urn:shares:0@server1.com',
     },
     'urn:share_dependencies:4@server1.com': {
       child_collection: 'documents',
       child_id: 'doc-1',
       created_at: '2000-02-01T21:00:00.000Z',
+      field: 'folder',
       host: 'server1.com',
       id: 'urn:share_dependencies:4@server1.com',
       modified_at: '2000-02-01T21:00:00.000Z',
       parent_collection: 'folders',
       parent_id: 'a',
+      relation_type: 'via',
       share: 'urn:shares:0@server1.com',
     },
     'urn:share_dependencies:5@server1.com': {
       child_collection: 'folders',
       child_id: 'd',
       created_at: '2000-02-01T21:00:00.000Z',
+      field: 'parent',
       host: 'server1.com',
       id: 'urn:share_dependencies:5@server1.com',
       modified_at: '2000-02-01T21:00:00.000Z',
       parent_collection: 'folders',
       parent_id: 'b',
+      relation_type: 'via',
       share: 'urn:shares:0@server1.com',
     },
     'urn:share_dependencies:6@server1.com': {
       child_collection: 'documents',
       child_id: 'doc-2',
       created_at: '2000-02-01T21:00:00.000Z',
+      field: 'folder',
       host: 'server1.com',
       id: 'urn:share_dependencies:6@server1.com',
       modified_at: '2000-02-01T21:00:00.000Z',
       parent_collection: 'folders',
       parent_id: 'b',
+      relation_type: 'via',
       share: 'urn:shares:0@server1.com',
     },
     'urn:share_dependencies:7@server1.com': {
       child_collection: 'documents',
       child_id: 'doc-3',
       created_at: '2000-02-01T21:00:00.000Z',
+      field: 'folder',
       host: 'server1.com',
       id: 'urn:share_dependencies:7@server1.com',
       modified_at: '2000-02-01T21:00:00.000Z',
       parent_collection: 'folders',
       parent_id: 'd',
+      relation_type: 'via',
       share: 'urn:shares:0@server1.com',
     },
   },
