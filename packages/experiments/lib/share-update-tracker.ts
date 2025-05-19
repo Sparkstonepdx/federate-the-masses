@@ -65,7 +65,7 @@ export async function afterCreate(records: RecordEngine, params: BaseParams) {
 
   const relatedDependencies = await records.find<ShareDependencies>(
     'share_dependencies',
-    `child_id in ('${relatedRecords.map(record => record.id).join("', '")}')`,
+    `child_id in ('${relatedRecords.map(record => record.record.id).join("', '")}')`,
   );
 
   let shareIds = new Set<string>();

@@ -83,7 +83,9 @@ test('when creating a shared record, update the relevant records', async () => {
   expect(await prettyList(records.list('share_updates'), ['record_id', 'action']))
     .toMatchInlineSnapshot(`
       {
-        "records": [],
+        "records": [
+          "[share_updates:urn:share_updates:2@test-url.com] record_id: "urn:documents:0@test-url.com", action: "create"",
+        ],
       }
     `);
 
@@ -97,6 +99,7 @@ test('when creating a shared record, update the relevant records', async () => {
         "[share_dependencies:urn:share_dependencies:5@server1.com] child_collection: "folders", child_id: "d", field: "parent", host: "server1.com", parent_collection: "folders", parent_id: "b", relation_type: "via", share: "urn:shares:0@server1.com"",
         "[share_dependencies:urn:share_dependencies:6@server1.com] child_collection: "documents", child_id: "doc-2", field: "folder", host: "server1.com", parent_collection: "folders", parent_id: "b", relation_type: "via", share: "urn:shares:0@server1.com"",
         "[share_dependencies:urn:share_dependencies:7@server1.com] child_collection: "documents", child_id: "doc-3", field: "folder", host: "server1.com", parent_collection: "folders", parent_id: "d", relation_type: "via", share: "urn:shares:0@server1.com"",
+        "[share_dependencies:urn:share_dependencies:1@test-url.com] host: "test-url.com", share: "urn:shares:0@server1.com", parent_collection: "folders", parent_id: "b", child_collection: "documents", child_id: "urn:documents:0@test-url.com"",
       ],
     }
   `);
@@ -124,7 +127,7 @@ test('when deleting a shared record, update the relevant records', async () => {
   ).toMatchInlineSnapshot(`
     {
       "records": [
-        "[share_updates:urn:share_updates:1@test-url.com] share: "urn:shares:0@server1.com", record_id: "doc-2", action: "delete"",
+        "[share_updates:urn:share_updates:3@test-url.com] share: "urn:shares:0@server1.com", record_id: "doc-2", action: "delete"",
       ],
     }
   `);
@@ -155,9 +158,9 @@ test('when deleting a shared record, update the relevant records', async () => {
   ).toMatchInlineSnapshot(`
     {
       "records": [
-        "[share_updates:urn:share_updates:2@test-url.com] record_id: "b", action: "delete"",
-        "[share_updates:urn:share_updates:3@test-url.com] record_id: "d", action: "delete"",
-        "[share_updates:urn:share_updates:4@test-url.com] record_id: "doc-3", action: "delete"",
+        "[share_updates:urn:share_updates:4@test-url.com] record_id: "b", action: "delete"",
+        "[share_updates:urn:share_updates:5@test-url.com] record_id: "d", action: "delete"",
+        "[share_updates:urn:share_updates:6@test-url.com] record_id: "doc-3", action: "delete"",
       ],
     }
   `);
@@ -202,10 +205,10 @@ test('update a record that is currently shared', async () => {
     .toMatchInlineSnapshot(`
       {
         "records": [
-          "[share_updates:urn:share_updates:5@test-url.com] share: "urn:shares:0@server1.com", action: "delete", record_id: "b"",
-          "[share_updates:urn:share_updates:6@test-url.com] share: "urn:shares:0@server1.com", action: "delete", record_id: "d"",
-          "[share_updates:urn:share_updates:7@test-url.com] share: "urn:shares:0@server1.com", action: "delete", record_id: "doc-2"",
-          "[share_updates:urn:share_updates:8@test-url.com] share: "urn:shares:0@server1.com", action: "delete", record_id: "doc-3"",
+          "[share_updates:urn:share_updates:7@test-url.com] share: "urn:shares:0@server1.com", action: "delete", record_id: "b"",
+          "[share_updates:urn:share_updates:8@test-url.com] share: "urn:shares:0@server1.com", action: "delete", record_id: "d"",
+          "[share_updates:urn:share_updates:9@test-url.com] share: "urn:shares:0@server1.com", action: "delete", record_id: "doc-2"",
+          "[share_updates:urn:share_updates:10@test-url.com] share: "urn:shares:0@server1.com", action: "delete", record_id: "doc-3"",
         ],
       }
     `);
@@ -232,10 +235,10 @@ test('update a record that is currently shared', async () => {
   ).toMatchInlineSnapshot(`
     {
       "records": [
-        "[share_updates:urn:share_updates:10@test-url.com] share: "urn:shares:0@server1.com", action: "create", record_id: "b"",
-        "[share_updates:urn:share_updates:12@test-url.com] share: "urn:shares:0@server1.com", action: "create", record_id: "d"",
-        "[share_updates:urn:share_updates:14@test-url.com] share: "urn:shares:0@server1.com", action: "create", record_id: "doc-2"",
-        "[share_updates:urn:share_updates:16@test-url.com] share: "urn:shares:0@server1.com", action: "create", record_id: "doc-3"",
+        "[share_updates:urn:share_updates:12@test-url.com] share: "urn:shares:0@server1.com", action: "create", record_id: "b"",
+        "[share_updates:urn:share_updates:14@test-url.com] share: "urn:shares:0@server1.com", action: "create", record_id: "d"",
+        "[share_updates:urn:share_updates:16@test-url.com] share: "urn:shares:0@server1.com", action: "create", record_id: "doc-2"",
+        "[share_updates:urn:share_updates:18@test-url.com] share: "urn:shares:0@server1.com", action: "create", record_id: "doc-3"",
       ],
     }
   `);
@@ -247,10 +250,10 @@ test('update a record that is currently shared', async () => {
           "[share_dependencies:urn:share_dependencies:1@server1.com] parent_id: "urn:shares:0@server1.com", child_id: "a"",
           "[share_dependencies:urn:share_dependencies:3@server1.com] parent_id: "a", child_id: "c"",
           "[share_dependencies:urn:share_dependencies:4@server1.com] parent_id: "a", child_id: "doc-1"",
-          "[share_dependencies:urn:share_dependencies:9@test-url.com] parent_id: "c", child_id: "b"",
-          "[share_dependencies:urn:share_dependencies:11@test-url.com] parent_id: "b", child_id: "d"",
-          "[share_dependencies:urn:share_dependencies:13@test-url.com] parent_id: "b", child_id: "doc-2"",
-          "[share_dependencies:urn:share_dependencies:15@test-url.com] parent_id: "d", child_id: "doc-3"",
+          "[share_dependencies:urn:share_dependencies:11@test-url.com] parent_id: "c", child_id: "b"",
+          "[share_dependencies:urn:share_dependencies:13@test-url.com] parent_id: "b", child_id: "d"",
+          "[share_dependencies:urn:share_dependencies:15@test-url.com] parent_id: "b", child_id: "doc-2"",
+          "[share_dependencies:urn:share_dependencies:17@test-url.com] parent_id: "d", child_id: "doc-3"",
         ],
       }
     `);
