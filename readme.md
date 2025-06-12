@@ -4,7 +4,7 @@ A modular, local-first framework for building federated web applications.
 
 Federate the Masses is an experimental toolkit for developers building decentralized apps where users retain control of their data. Inspired by tools like PocketBase, this framework simplifies federation — enabling secure, server-to-server sync with a local-first approach and a clean API surface.
 
-# ✨ Features
+## ✨ Features
 
 Local-first architecture
 Data lives locally, syncing only when necessary — resilient and offline-friendly.
@@ -31,7 +31,7 @@ Custom apps that require secure, controlled data replication across instances
 
 Local-first SaaS with optional cloud or edge sync
 
-# 🚧 Status
+## 🚧 Status
 
 Actively under development. Current milestones include:
 
@@ -43,15 +43,15 @@ Authentication, record integrity, and conflict handling
 
 Early developer documentation and CLI tooling
 
-# 📦 Installation
+## 📦 Installation
 
 Not yet published. If you’re interested in testing, contributing, or following along, reach out or watch this repo for updates.
 
-# 📝 License
+## 📝 License
 
 This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 The API is designed to support modular use without tight coupling, enabling external services and plugins to interact without needing to modify the core.
 
-# 🙋 Get Involved
+## 🙋 Get Involved
 
 If you're passionate about local-first software, federation protocols, or building modular developer tooling, we’d love to connect.
