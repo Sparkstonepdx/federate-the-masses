@@ -156,15 +156,41 @@ export default class Server {
     if (!share) throw new Error(`failed to load share: ${shareId}`);
     await this.records.expand(share, ['server']);
 
-    const syncUrl = new URL(`/share/${share.id}/sync/incremental`, share.expand.server.get('url'));
+    console.log(share.expand.server.get('url'));
+
+    const syncUrl = new URL(
+      `/api/share/${share.id}/sync/incremental`,
+      share.expand.server.get('url'),
+    );
     syncUrl.searchParams.set('since', share.get('last_remote_sync'));
+
+    console.log({ syncUrl: syncUrl.toString() });
 
     const response = await this.fetch(syncUrl, {
       method: 'post',
       body: JSON.stringify({ subscriber: await this.getIdentity() }),
     });
+
     if (!response.ok) {
       throw new Error(`failed to incrementally sync: ${shareId}`, { cause: response });
+    }
+
+    const updates = await response.json();
+    console.log({ updates });
+
+    for (const update of updates.data.records) {
+      console.dir(update, { depth: 10 });
+      switch (update.data.action) {
+        case 'update':
+          await this.records.update(
+            update.data.collection,
+            update.data.record_id,
+            update.expand.payload.data,
+          );
+          break;
+        default:
+          throw new Error('not implemented');
+      }
     }
   }
 

@@ -191,7 +191,7 @@ test('can invite and complete initial sync', async () => {
   `);
 });
 
-test('can complete incremental sync from host after initial sync', async () => {
+test.only('can complete incremental sync from host after initial sync', async () => {
   // node setup
   const network = new FakeNetwork();
   const server1Store = new MemoryStore(server1Data);
@@ -242,13 +242,14 @@ test('can complete incremental sync from host after initial sync', async () => {
     [documents:doc-3] host: "server1.com", title: "Notes", folder: "d""
   `);
 
-  // await server1.records.update('documents', 'doc-1', { title: 'an updated title' });
+  vi.setSystemTime(new Date(2000, 1, 2, 13));
 
-  // const doc1 = await server2.records.get('documents', 'doc-1');
+  await server1.records.update('documents', 'doc-1', { title: 'an updated title' });
 
-  // await server2.incrementalSync(share.id);
+  await server2.incrementalSync(share.id);
+  const doc1 = await server2.records.get('documents', 'doc-1');
 
-  // expect(prettyPrint(doc1)).toMatchInlineSnapshot(
-  //   `"[documents:doc-1] host: "server1.com", title: "Spec Sheet", folder: "a""`,
-  // );
+  expect(prettyPrint(doc1)).toMatchInlineSnapshot(
+    `"[documents:doc-1] host: "server1.com", title: "an updated title", folder: "a""`,
+  );
 });

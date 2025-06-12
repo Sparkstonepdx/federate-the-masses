@@ -1,3 +1,4 @@
+import { pick } from 'lodash-es';
 import { SchemaField, ShareDependencies, ShareUpdates } from './core-record-types';
 import { BaseParams, HookFnParams } from './hooks';
 import { Record, RecordEngine } from './records';
@@ -163,6 +164,24 @@ export async function afterUpdate(records: RecordEngine, params: HookFnParams<an
         true,
       );
     }
+  }
+
+  const shareDependencies = await records.find<ShareDependencies>(
+    'share_dependencies',
+    `child_id = '${params.recordData.id}'`,
+  );
+  let visitedShares = new Set();
+  for (const shareDependency of shareDependencies.records) {
+    if (visitedShares.has(shareDependency.get('share'))) {
+      continue;
+    }
+    await records.create<ShareUpdates>('share_updates', {
+      share: shareDependency.get('share'),
+      collection: params.recordSchema.collectionName,
+      record_id: params.recordData.id,
+      action: 'update',
+    });
+    visitedShares.add(shareDependency.get('share'));
   }
 }
 

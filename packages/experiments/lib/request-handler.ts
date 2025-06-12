@@ -1,5 +1,12 @@
 import { Hono } from 'hono';
-import { Invites, Servers, ShareDependencies, Shares, ShareSubscribers } from './core-record-types';
+import {
+  Invites,
+  Servers,
+  ShareDependencies,
+  Shares,
+  ShareSubscribers,
+  ShareUpdates,
+} from './core-record-types';
 
 const app = new Hono();
 export default app;
@@ -82,6 +89,21 @@ app.post('/share/:share_id/sync/incremental', async c => {
   const server = c.get('server');
   const shareId = c.req.param('share_id');
   const body = await c.req.json();
+  const since = c.req.query('since');
 
-  console.log({ body });
+  const updates = await server.records.find<ShareUpdates>(
+    `share_updates`,
+    `created_at > '${since}'`,
+  );
+
+  // TODO: compress update list here so we only transfer each record once
+
+  for (const update of updates.records) {
+    const payload = await server.records.get(update.get('collection'), update.get('record_id'));
+    update.setExpand({ payload });
+  }
+
+  console.log(updates);
+
+  return c.json({ data: updates });
 });
