@@ -1,5 +1,5 @@
 import { expect, test, vi } from 'vitest';
-import Server from './federated-share';
+import Server from './server';
 import { MemoryStore } from './store';
 import { SchemaEngine } from './schema';
 import { data, schema } from './mock-data/tasks';
@@ -18,7 +18,7 @@ test('expand single forward relation', async () => {
   await server.records.expand(list, ['list']);
 
   expect(prettyPrint(list.expand.list)).toMatchInlineSnapshot(
-    `"[lists:list-1] title: "Project Alpha""`,
+    `"[lists:list-1] title: "Project Alpha""`
   );
 });
 
@@ -35,7 +35,7 @@ test('expand via relation', async () => {
   await server.records.expand(list, ['tasks']);
 
   expect(prettyPrintArray(list.expand.tasks)).toMatchInlineSnapshot(
-    `"[tasks:task-3] title: "Review homepage", content: "Internal QA and feedback", list: "list-2", parent: "task-2""`,
+    `"[tasks:task-3] title: "Review homepage", content: "Internal QA and feedback", list: "list-2", parent: "task-2""`
   );
 });
 

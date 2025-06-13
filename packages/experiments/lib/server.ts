@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import apiRouter from './request-handler';
+import apiRouter from './api';
 import { Store } from './store';
 import { generateId, Record, RecordEngine } from './records';
 import { HooksEngine } from './hooks';
@@ -71,7 +71,7 @@ export default class Server {
         parent: share,
         field: 'child_id',
       },
-      share.id,
+      share.id
     );
 
     const invite = await this.records.create('invites', {
@@ -160,7 +160,7 @@ export default class Server {
 
     const syncUrl = new URL(
       `/api/share/${share.id}/sync/incremental`,
-      share.expand.server.get('url'),
+      share.expand.server.get('url')
     );
     syncUrl.searchParams.set('since', share.get('last_remote_sync'));
 
@@ -185,7 +185,7 @@ export default class Server {
           await this.records.update(
             update.data.collection,
             update.data.record_id,
-            update.expand.payload.data,
+            update.expand.payload.data
           );
           break;
         default:

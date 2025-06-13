@@ -1,5 +1,5 @@
 import { expect, test, vi } from 'vitest';
-import Server from './federated-share';
+import Server from './server';
 import { MemoryStore } from './store';
 import { SchemaEngine } from './schema';
 import systemSchema from './system-schema';
@@ -128,11 +128,11 @@ test('can share and accept invite', async () => {
 
   let share = await server2.acceptInvite(
     { auth: { record: { id: 'p2' } } },
-    `http://server1.com${invite}`,
+    `http://server1.com${invite}`
   );
 
   expect(prettyPrint(share)).toMatchInlineSnapshot(
-    `"[shares:urn:shares:0@server1.com] host: "server1.com", collection: "folders", record_id: "a", server: "server1.com", access_token: "fake-jwt-token""`,
+    `"[shares:urn:shares:0@server1.com] host: "server1.com", collection: "folders", record_id: "a", server: "server1.com", access_token: "fake-jwt-token""`
   );
 });
 
@@ -166,7 +166,7 @@ test('can invite and complete initial sync', async () => {
 
   let share = await server2.acceptInvite(
     { auth: { record: { id: 'p2' } } },
-    `http://server1.com${invite}`,
+    `http://server1.com${invite}`
   );
 
   await server2.initialSync(share);
@@ -178,7 +178,7 @@ test('can invite and complete initial sync', async () => {
   const folder = await server2.records.get<{ title: string }>('folders', 'a');
 
   expect(prettyPrint(folder)).toMatchInlineSnapshot(
-    `"[folders:a] host: "server1.com", name: "Folder A""`,
+    `"[folders:a] host: "server1.com", name: "Folder A""`
   );
 
   const documents = await server2.records.list('documents');
@@ -222,7 +222,7 @@ test.only('can complete incremental sync from host after initial sync', async ()
 
   let share = await server2.acceptInvite(
     { auth: { record: { id: 'p2' } } },
-    `http://server1.com${invite}`,
+    `http://server1.com${invite}`
   );
 
   await server2.initialSync(share);
@@ -230,7 +230,7 @@ test.only('can complete incremental sync from host after initial sync', async ()
   const folder = await server2.records.get<{ title: string }>('folders', 'a');
 
   expect(prettyPrint(folder)).toMatchInlineSnapshot(
-    `"[folders:a] host: "server1.com", name: "Folder A""`,
+    `"[folders:a] host: "server1.com", name: "Folder A""`
   );
 
   const documents = await server2.records.list('documents');
@@ -250,6 +250,6 @@ test.only('can complete incremental sync from host after initial sync', async ()
   const doc1 = await server2.records.get('documents', 'doc-1');
 
   expect(prettyPrint(doc1)).toMatchInlineSnapshot(
-    `"[documents:doc-1] host: "server1.com", title: "an updated title", folder: "a""`,
+    `"[documents:doc-1] host: "server1.com", title: "an updated title", folder: "a""`
   );
 });

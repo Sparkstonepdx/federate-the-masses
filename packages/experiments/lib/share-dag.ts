@@ -1,5 +1,5 @@
 import { ShareDependencies, Shares, ShareUpdates } from './core-record-types';
-import type Server from './federated-share';
+import type Server from './server';
 import { Record, RecordEngine } from './records';
 
 interface QueuedItem {
@@ -14,7 +14,7 @@ export async function createDependencyTree(
   records: RecordEngine,
   item: QueuedItem,
   shareId: string,
-  createUpdates: boolean = false,
+  createUpdates: boolean = false
 ) {
   let visitedNodes = new Set();
   let queue: QueuedItem[] = [item];
@@ -53,7 +53,7 @@ async function getReferencedRecords(records: RecordEngine, record: Record<any>) 
     if (fieldSchema.via) {
       const result = await records.find(
         fieldSchema.collection,
-        `${fieldSchema.via} = '${record.id}'`,
+        `${fieldSchema.via} = '${record.id}'`
       );
       queueItems.push(
         ...result.records.map(
@@ -64,8 +64,8 @@ async function getReferencedRecords(records: RecordEngine, record: Record<any>) 
               relation_type: 'via',
               recordId: r.id,
               parent: record,
-            }) as QueuedItem,
-        ),
+            } as QueuedItem)
+        )
       );
       continue;
     }
@@ -84,11 +84,11 @@ async function getReferencedRecords(records: RecordEngine, record: Record<any>) 
 
 export async function deleteDependencyTree(
   records: RecordEngine,
-  record: Record<ShareDependencies>,
+  record: Record<ShareDependencies>
 ) {
   let children = await records.find<ShareDependencies>(
     'share_dependencies',
-    `parent_id = '${record.get('child_id')}' and share = '${record.get('share')}' `,
+    `parent_id = '${record.get('child_id')}' and share = '${record.get('share')}' `
   );
   await records.delete('share_dependencies', record.id);
   await records.create<ShareUpdates>('share_updates', {
@@ -111,7 +111,7 @@ export async function deleteDependencyTree(
     let childIds = children.records.map(child => child.get('child_id'));
     children = await records.find<ShareDependencies>(
       'share_dependencies',
-      `share = '${record.get('share')}' and parent_id in ('${childIds.join(`', '`)}')`,
+      `share = '${record.get('share')}' and parent_id in ('${childIds.join(`', '`)}')`
     );
   }
 }
