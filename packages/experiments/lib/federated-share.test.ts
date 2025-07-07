@@ -191,7 +191,7 @@ test('can invite and complete initial sync', async () => {
   `);
 });
 
-test.only('can complete incremental sync from host after initial sync', async () => {
+test('can complete incremental sync from host after initial sync', async () => {
   // node setup
   const network = new FakeNetwork();
   const server1Store = new MemoryStore(server1Data);
@@ -251,5 +251,79 @@ test.only('can complete incremental sync from host after initial sync', async ()
 
   expect(prettyPrint(doc1)).toMatchInlineSnapshot(
     `"[documents:doc-1] host: "server1.com", title: "an updated title", folder: "a""`,
+  );
+});
+
+test('can complete multiple incremental syncs from host after initial sync', async () => {
+  // node setup
+  const network = new FakeNetwork();
+  const server1Store = new MemoryStore(server1Data);
+
+  const server1 = new Server({
+    store: server1Store,
+    schema: new SchemaEngine(schema),
+    fetch: network.fetch,
+    identity: {
+      url: 'http://server1.com',
+      public_key: '',
+    },
+  });
+
+  const server2 = new Server({
+    fetch: network.fetch,
+    store: new MemoryStore(server2Data),
+    schema: new SchemaEngine(schema),
+    identity: { url: 'http://server2.com', public_key: '' },
+  });
+
+  network.register('http://server1.com', server1);
+  network.register('http://server2.com', server2);
+
+  vi.setSystemTime(new Date(2000, 1, 1, 13));
+
+  const invite = await server1.createInviteLink({ auth: { record: { id: 'p1' } } }, 'folders', 'a');
+
+  let share = await server2.acceptInvite(
+    { auth: { record: { id: 'p2' } } },
+    `http://server1.com${invite}`,
+  );
+
+  await server2.initialSync(share);
+
+  const folder = await server2.records.get<{ title: string }>('folders', 'a');
+
+  expect(prettyPrint(folder)).toMatchInlineSnapshot(
+    `"[folders:a] host: "server1.com", name: "Folder A""`,
+  );
+
+  const documents = await server2.records.list('documents');
+  expect(prettyPrintArray(documents.records)).toMatchInlineSnapshot(`
+    "[documents:doc-4] title: "Invoice", folder: "x"
+    [documents:doc-5] title: "Summary", folder: "y"
+    [documents:doc-1] host: "server1.com", title: "Spec Sheet", folder: "a"
+    [documents:doc-2] host: "server1.com", title: "Design Doc", folder: "b"
+    [documents:doc-3] host: "server1.com", title: "Notes", folder: "d""
+  `);
+
+  vi.setSystemTime(new Date(2000, 1, 2, 13));
+
+  await server1.records.update('documents', 'doc-1', { title: 'an updated title' });
+
+  await server2.incrementalSync(share.id);
+  const doc1 = await server2.records.get('documents', 'doc-1');
+
+  expect(prettyPrint(doc1)).toMatchInlineSnapshot(
+    `"[documents:doc-1] host: "server1.com", title: "an updated title", folder: "a""`,
+  );
+
+  vi.setSystemTime(new Date(2000, 1, 3, 13));
+
+  await server1.records.update('documents', 'doc-2', { title: 'an new  updated title' });
+
+  await server2.incrementalSync(share.id);
+  const doc2 = await server2.records.get('documents', 'doc-2');
+
+  expect(prettyPrint(doc2)).toMatchInlineSnapshot(
+    `"[documents:doc-2] host: "server1.com", title: "an new  updated title", folder: "b""`,
   );
 });
