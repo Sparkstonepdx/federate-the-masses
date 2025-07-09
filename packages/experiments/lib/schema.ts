@@ -1,5 +1,5 @@
 import set from 'lodash-es/set';
-import { Schema } from './core-record-types';
+import { Schema } from '../../shared/core-record-types';
 
 interface SchemaEnrichment {
   references?: string[];
@@ -21,7 +21,7 @@ export class SchemaEngine {
     for (const [field, fieldSchema] of Object.entries(schema.fields)) {
       if (fieldSchema.type !== 'relation') continue;
       let nestedReferences = this.computeRelationship(fieldSchema.collection, visitedKeys).map(
-        ref => [fieldSchema.collection, ref].join('.'),
+        ref => [fieldSchema.collection, ref].join('.')
       );
 
       set(this.schema, [key, 'referencedBy', fieldSchema.collection], true);

@@ -1,5 +1,4 @@
 import { test, vi } from 'vitest';
-import { data, schema } from './mock-data/tasks';
 import Server from './server';
 import { MemoryStore } from './store';
 import { SchemaEngine } from './schema';

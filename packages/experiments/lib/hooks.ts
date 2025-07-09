@@ -1,4 +1,4 @@
-import { Schema } from './core-record-types';
+import { Schema } from '../../shared/core-record-types';
 import { RecordData } from './store';
 
 export interface BaseParams<RecordType extends object = {}> {
@@ -16,7 +16,7 @@ export interface HookFnParams<RecordType> {
 }
 
 type HookFn<T extends HookType = HookType, RecordType extends object = {}> = (
-  params: HookFnParams<RecordType>[T],
+  params: HookFnParams<RecordType>[T]
 ) => void | Promise<void>;
 type HookType =
   | 'beforeCreate'
@@ -35,7 +35,7 @@ export class HooksEngine {
   register<T extends HookType, RecordType extends object = {}>(
     event: T,
     collectionName: string,
-    fn: HookFn<T, RecordType>,
+    fn: HookFn<T, RecordType>
   ) {
     const key = `${event}:${collectionName}`;
     if (!this.hookMap.has(key)) this.hookMap.set(key, new Set());
@@ -46,7 +46,7 @@ export class HooksEngine {
   async run<T extends HookType, RecordType extends object = {}>(
     event: T,
     collectionName: string,
-    hookFnParams: HookFnParams<RecordType>[T],
+    hookFnParams: HookFnParams<RecordType>[T]
   ) {
     const key = `${event}:${collectionName}`;
     for (const fn of this.hookMap.get(key) ?? []) await (fn as HookFn<T, RecordType>)(hookFnParams);

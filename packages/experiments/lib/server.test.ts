@@ -2,9 +2,10 @@ import { expect, test, vi } from 'vitest';
 import Server from './server';
 import { MemoryStore } from './store';
 import { SchemaEngine } from './schema';
-import systemSchema from './system-schema';
-import { Schema, Shares } from './core-record-types';
-import { prettyPrint, prettyPrintArray } from './string';
+import systemSchema from '../../shared/system-schema';
+import { Schema, Shares } from '../../shared/core-record-types';
+import { prettyPrint, prettyPrintArray } from '../../shared/string';
+import { FakeNetwork } from '../../end-to-end-tests/lib/fakeNetwork';
 
 let baseFields = {
   id: 'string',
@@ -80,23 +81,6 @@ let server2Data = {
     'doc-5': { id: 'doc-5', title: 'Summary', folder: 'y' },
   },
 };
-
-class FakeNetwork {
-  private addresses = {};
-
-  register(hostName: string, server: Server) {
-    this.addresses[hostName] = server;
-  }
-
-  fetch = (...args: ConstructorParameters<typeof Request>) => {
-    const request = new Request(...args);
-    const url = new URL(request.url);
-
-    let target = this.addresses[url.origin];
-
-    return target.handleRequest(request);
-  };
-}
 
 test('can share and accept invite', async () => {
   const network = new FakeNetwork();
@@ -285,7 +269,7 @@ test('can complete multiple incremental syncs from host after initial sync', asy
 
   let share = await server2.acceptInvite(
     { auth: { record: { id: 'p2' } } },
-    `http://server1.com${invite}`,
+    `http://server1.com${invite}`
   );
 
   await server2.initialSync(share);
@@ -293,7 +277,7 @@ test('can complete multiple incremental syncs from host after initial sync', asy
   const folder = await server2.records.get<{ title: string }>('folders', 'a');
 
   expect(prettyPrint(folder)).toMatchInlineSnapshot(
-    `"[folders:a] host: "server1.com", name: "Folder A""`,
+    `"[folders:a] host: "server1.com", name: "Folder A""`
   );
 
   const documents = await server2.records.list('documents');
@@ -313,7 +297,7 @@ test('can complete multiple incremental syncs from host after initial sync', asy
   const doc1 = await server2.records.get('documents', 'doc-1');
 
   expect(prettyPrint(doc1)).toMatchInlineSnapshot(
-    `"[documents:doc-1] host: "server1.com", title: "an updated title", folder: "a""`,
+    `"[documents:doc-1] host: "server1.com", title: "an updated title", folder: "a""`
   );
 
   vi.setSystemTime(new Date(2000, 1, 3, 13));
@@ -324,6 +308,6 @@ test('can complete multiple incremental syncs from host after initial sync', asy
   const doc2 = await server2.records.get('documents', 'doc-2');
 
   expect(prettyPrint(doc2)).toMatchInlineSnapshot(
-    `"[documents:doc-2] host: "server1.com", title: "an new  updated title", folder: "b""`,
+    `"[documents:doc-2] host: "server1.com", title: "an new  updated title", folder: "b""`
   );
 });

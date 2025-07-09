@@ -4,9 +4,9 @@ import { SchemaEngine } from './schema';
 import { HooksEngine } from './hooks';
 import { attachShareUpdateTracker, findRelatedRecords } from './share-update-tracker';
 import { MemoryStore } from './store';
-import systemSchema from './system-schema';
-import { Schema } from './core-record-types';
-import { prettyList, prettyPrint } from './string';
+import systemSchema from '../../shared/system-schema';
+import { Schema } from '../../shared/core-record-types';
+import { prettyList, prettyPrint } from '../../shared/string';
 
 let schema: Record<string, Schema> = {
   ...systemSchema,
@@ -44,7 +44,7 @@ test('when creating a shared record, update the relevant records', async () => {
     new MemoryStore(currentState),
     new SchemaEngine(schema),
     'test-url.com',
-    new HooksEngine(),
+    new HooksEngine()
   );
 
   attachShareUpdateTracker(records);
@@ -77,7 +77,7 @@ test('when creating a shared record, update the relevant records', async () => {
         "relation_type": "field",
       },
     ]
-  `,
+  `
   );
 
   expect(await prettyList(records.list('share_updates'), ['record_id', 'action']))
@@ -111,7 +111,7 @@ test('when deleting a shared record, update the relevant records', async () => {
     new MemoryStore(currentState),
     new SchemaEngine(schema),
     'test-url.com',
-    new HooksEngine(),
+    new HooksEngine()
   );
 
   attachShareUpdateTracker(records);
@@ -122,8 +122,8 @@ test('when deleting a shared record, update the relevant records', async () => {
   expect(
     await prettyList(
       records.find('share_updates', `created_at > '${new Date(2000, 1, 2, 12).toISOString()}'`),
-      ['share', 'record_id', 'action'],
-    ),
+      ['share', 'record_id', 'action']
+    )
   ).toMatchInlineSnapshot(`
     {
       "records": [
@@ -153,8 +153,8 @@ test('when deleting a shared record, update the relevant records', async () => {
   expect(
     await prettyList(
       records.find('share_updates', `created_at > '${new Date(2000, 1, 2, 13).toISOString()}'`),
-      ['record_id', 'action'],
-    ),
+      ['record_id', 'action']
+    )
   ).toMatchInlineSnapshot(`
     {
       "records": [
@@ -176,13 +176,13 @@ test('when deleting a shared record, update the relevant records', async () => {
     `);
 });
 
-test.only('update a record content that is currently shared', async () => {
+test('update a record content that is currently shared', async () => {
   vi.setSystemTime(new Date(2000, 1, 1, 13));
   const records = new RecordEngine(
     new MemoryStore(currentState),
     new SchemaEngine(schema),
     'test-url.com',
-    new HooksEngine(),
+    new HooksEngine()
   );
 
   attachShareUpdateTracker(records);
@@ -218,7 +218,7 @@ test.only('update a record content that is currently shared', async () => {
   expect(await prettyList(records.list('share_updates'))).toMatchInlineSnapshot(`
     {
       "records": [
-        "[share_updates:urn:share_updates:0@test-url.com] host: "test-url.com", share: "urn:shares:0@server1.com", collection: "documents", record_id: "doc-3", action: "update"",
+        "[share_updates:urn:share_updates:7@test-url.com] host: "test-url.com", share: "urn:shares:0@server1.com", collection: "documents", record_id: "doc-3", action: "update"",
       ],
     }
   `);
@@ -230,7 +230,7 @@ test('update a record that is currently shared', async () => {
     new MemoryStore(currentState),
     new SchemaEngine(schema),
     'test-url.com',
-    new HooksEngine(),
+    new HooksEngine()
   );
 
   attachShareUpdateTracker(records);
@@ -253,10 +253,10 @@ test('update a record that is currently shared', async () => {
     .toMatchInlineSnapshot(`
       {
         "records": [
-          "[share_updates:urn:share_updates:7@test-url.com] share: "urn:shares:0@server1.com", action: "delete", record_id: "b"",
-          "[share_updates:urn:share_updates:8@test-url.com] share: "urn:shares:0@server1.com", action: "delete", record_id: "d"",
-          "[share_updates:urn:share_updates:9@test-url.com] share: "urn:shares:0@server1.com", action: "delete", record_id: "doc-2"",
-          "[share_updates:urn:share_updates:10@test-url.com] share: "urn:shares:0@server1.com", action: "delete", record_id: "doc-3"",
+          "[share_updates:urn:share_updates:8@test-url.com] share: "urn:shares:0@server1.com", action: "delete", record_id: "b"",
+          "[share_updates:urn:share_updates:9@test-url.com] share: "urn:shares:0@server1.com", action: "delete", record_id: "d"",
+          "[share_updates:urn:share_updates:10@test-url.com] share: "urn:shares:0@server1.com", action: "delete", record_id: "doc-2"",
+          "[share_updates:urn:share_updates:11@test-url.com] share: "urn:shares:0@server1.com", action: "delete", record_id: "doc-3"",
         ],
       }
     `);
@@ -278,15 +278,16 @@ test('update a record that is currently shared', async () => {
   expect(
     await prettyList(
       records.find('share_updates', `created_at > '${new Date(2000, 1, 3, 12).toISOString()}'`),
-      ['share', 'action', 'record_id'],
-    ),
+      ['share', 'action', 'record_id']
+    )
   ).toMatchInlineSnapshot(`
     {
       "records": [
-        "[share_updates:urn:share_updates:12@test-url.com] share: "urn:shares:0@server1.com", action: "create", record_id: "b"",
-        "[share_updates:urn:share_updates:14@test-url.com] share: "urn:shares:0@server1.com", action: "create", record_id: "d"",
-        "[share_updates:urn:share_updates:16@test-url.com] share: "urn:shares:0@server1.com", action: "create", record_id: "doc-2"",
-        "[share_updates:urn:share_updates:18@test-url.com] share: "urn:shares:0@server1.com", action: "create", record_id: "doc-3"",
+        "[share_updates:urn:share_updates:13@test-url.com] share: "urn:shares:0@server1.com", action: "create", record_id: "b"",
+        "[share_updates:urn:share_updates:15@test-url.com] share: "urn:shares:0@server1.com", action: "create", record_id: "d"",
+        "[share_updates:urn:share_updates:17@test-url.com] share: "urn:shares:0@server1.com", action: "create", record_id: "doc-2"",
+        "[share_updates:urn:share_updates:19@test-url.com] share: "urn:shares:0@server1.com", action: "create", record_id: "doc-3"",
+        "[share_updates:urn:share_updates:20@test-url.com] share: "urn:shares:0@server1.com", action: "update", record_id: "b"",
       ],
     }
   `);
@@ -298,10 +299,10 @@ test('update a record that is currently shared', async () => {
           "[share_dependencies:urn:share_dependencies:1@server1.com] parent_id: "urn:shares:0@server1.com", child_id: "a"",
           "[share_dependencies:urn:share_dependencies:3@server1.com] parent_id: "a", child_id: "c"",
           "[share_dependencies:urn:share_dependencies:4@server1.com] parent_id: "a", child_id: "doc-1"",
-          "[share_dependencies:urn:share_dependencies:11@test-url.com] parent_id: "c", child_id: "b"",
-          "[share_dependencies:urn:share_dependencies:13@test-url.com] parent_id: "b", child_id: "d"",
-          "[share_dependencies:urn:share_dependencies:15@test-url.com] parent_id: "b", child_id: "doc-2"",
-          "[share_dependencies:urn:share_dependencies:17@test-url.com] parent_id: "d", child_id: "doc-3"",
+          "[share_dependencies:urn:share_dependencies:12@test-url.com] parent_id: "c", child_id: "b"",
+          "[share_dependencies:urn:share_dependencies:14@test-url.com] parent_id: "b", child_id: "d"",
+          "[share_dependencies:urn:share_dependencies:16@test-url.com] parent_id: "b", child_id: "doc-2"",
+          "[share_dependencies:urn:share_dependencies:18@test-url.com] parent_id: "d", child_id: "doc-3"",
         ],
       }
     `);

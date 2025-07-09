@@ -1,9 +1,9 @@
 import { pick } from 'lodash-es';
-import { SchemaField, ShareDependencies, ShareUpdates } from './core-record-types';
+import { SchemaField, ShareDependencies, ShareUpdates } from '../../shared/core-record-types';
 import { BaseParams, HookFnParams } from './hooks';
 import { Record, RecordEngine } from './records';
 import { createDependencyTree, deleteDependencyTree } from './share-dag';
-import { prettyPrint } from './string';
+import { prettyPrint } from '../../shared/string';
 
 export function attachShareUpdateTracker(records: RecordEngine) {
   let listeners = [
@@ -24,7 +24,7 @@ type Reference = { relation_type: 'via' | 'field'; field: string; record: Record
 export async function findRelatedRecords<RecordType extends object = {}>(
   records: RecordEngine,
   record: Record<RecordType>,
-  ignoreViaRecords?: boolean,
+  ignoreViaRecords?: boolean
 ) {
   let references: Reference[] = [];
   for (const [fieldName, fieldSchema] of Object.entries(record.schema.fields)) {
@@ -38,19 +38,19 @@ export async function findRelatedRecords<RecordType extends object = {}>(
               record,
               relation_type: 'via',
               field: fieldSchema.via as string,
-            }) as Reference,
-        ),
+            } as Reference)
+        )
       );
       continue;
     }
     if (record.get(fieldName as keyof RecordType)) {
       const result = await records.get<RecordType>(
         fieldSchema.collection,
-        record.get(fieldName as keyof RecordType) as string,
+        record.get(fieldName as keyof RecordType) as string
       );
       if (!result)
         throw new Error(
-          `referenced record not found: ${prettyPrint(record)} ${JSON.stringify(fieldName)}`,
+          `referenced record not found: ${prettyPrint(record)} ${JSON.stringify(fieldName)}`
         );
       references.push({ record: result, relation_type: 'field', field: fieldName });
     }
@@ -66,7 +66,7 @@ export async function afterCreate(records: RecordEngine, params: BaseParams) {
 
   const relatedDependencies = await records.find<ShareDependencies>(
     'share_dependencies',
-    `child_id in ('${relatedRecords.map(record => record.record.id).join("', '")}')`,
+    `child_id in ('${relatedRecords.map(record => record.record.id).join("', '")}')`
   );
 
   let shareIds = new Set<string>();
@@ -127,7 +127,7 @@ export async function afterUpdate(records: RecordEngine, params: HookFnParams<an
 
   const existingParentDeps = await records.find<ShareDependencies>(
     'share_dependencies',
-    `child_id = '${record.id}'`,
+    `child_id = '${record.id}'`
   );
 
   // if we removed a field that linked it to a parent, we should delete the tree
@@ -146,7 +146,7 @@ export async function afterUpdate(records: RecordEngine, params: HookFnParams<an
     if (!record.get(changedField.name as string)) continue;
     let newShareDeps = await records.find<ShareDependencies>(
       'share_dependencies',
-      `child_id = '${record.get(changedField.name)}'`,
+      `child_id = '${record.get(changedField.name)}'`
     );
     for (const dep of newShareDeps.records) {
       const parentRecord = await records.get<any>(dep.get('child_collection'), dep.get('child_id'));
@@ -161,14 +161,14 @@ export async function afterUpdate(records: RecordEngine, params: HookFnParams<an
           parent: parentRecord,
         },
         dep.get('share'),
-        true,
+        true
       );
     }
   }
 
   const shareDependencies = await records.find<ShareDependencies>(
     'share_dependencies',
-    `child_id = '${params.recordData.id}'`,
+    `child_id = '${params.recordData.id}'`
   );
   let visitedShares = new Set();
   for (const shareDependency of shareDependencies.records) {
@@ -191,7 +191,7 @@ export async function afterDelete(records: RecordEngine, params: BaseParams) {
   const record = new Record(params.recordSchema, params.recordData);
   const relatedDependencies = await records.find<ShareDependencies>(
     'share_dependencies',
-    `child_id = '${record.id}'`,
+    `child_id = '${record.id}'`
   );
 
   for (const child of relatedDependencies.records) {

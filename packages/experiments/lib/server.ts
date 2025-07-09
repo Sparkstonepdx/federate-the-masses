@@ -4,9 +4,10 @@ import { Store } from './store';
 import { generateId, Record, RecordEngine } from './records';
 import { HooksEngine } from './hooks';
 import { createDependencyTree } from './share-dag';
-import { Servers, Shares } from './core-record-types';
+import { Servers, Shares } from '../../shared/core-record-types';
 import { SchemaEngine } from './schema';
 import { attachShareUpdateTracker } from './share-update-tracker';
+import { Fetch } from '../../shared/types';
 
 interface Context {
   auth: { record: { id: string } };
@@ -22,7 +23,7 @@ interface ConstructorOptions {
 export default class Server {
   public schema: SchemaEngine;
   private store: Store;
-  private fetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+  private fetch: Fetch;
   private honoRouter: Hono;
   private identity: { url: string; public_key: string; host: string };
   public records: RecordEngine;
@@ -192,6 +193,10 @@ export default class Server {
           throw new Error('not implemented');
       }
     }
+  }
+
+  get router() {
+    return this.honoRouter;
   }
 
   async handleRequest(request: Request) {

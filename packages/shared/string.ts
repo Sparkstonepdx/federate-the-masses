@@ -1,9 +1,9 @@
 import { omit, pick } from 'lodash-es';
-import { Record } from './records';
+import { Record } from '../experiments/lib/records';
 
 export function prettyPrint<RecordType extends object = {}>(
   record?: Record<RecordType> | null,
-  pickFields?: string[],
+  pickFields?: string[]
 ) {
   if (!record) return `[] ${record}`;
   let data: any = omit(record.data(), 'created_at', 'modified_at', 'id');

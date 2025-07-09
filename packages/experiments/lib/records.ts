@@ -1,8 +1,8 @@
-import { RecordPage, Schema } from './core-record-types';
+import { RecordPage, Schema } from '../../shared/core-record-types';
 import { HooksEngine } from './hooks';
 import { SchemaEngine } from './schema';
 import { RecordData, Store } from './store';
-import { prettyPrint } from './string';
+import { prettyPrint } from '../../shared/string';
 
 let lastId = 0;
 type Expand<T> = T extends infer O ? { [K in keyof O]: O[K] } : never;
@@ -20,12 +20,12 @@ export class RecordEngine {
     private store: Store,
     private schema: SchemaEngine,
     private serverUrl: string,
-    public hooks: HooksEngine,
+    public hooks: HooksEngine
   ) {}
 
   async create<RecordType extends object>(
     collectionName: string,
-    data: Expand<Partial<RecordType & RecordData>>,
+    data: Expand<Partial<RecordType & RecordData>>
   ) {
     const recordSchema = this.schema.get(collectionName);
     if (!recordSchema) throw new Error(`Unknown collection: ${collectionName}`);
@@ -57,7 +57,7 @@ export class RecordEngine {
   async update<RecordType extends object = {}>(
     collectionName: string,
     id: string,
-    data: Partial<RecordType & RecordData>,
+    data: Partial<RecordType & RecordData>
   ) {
     const recordSchema = this.schema.get(collectionName);
     if (!recordSchema) throw new Error(`Unknown collection: ${collectionName}`);
@@ -114,7 +114,7 @@ export class RecordEngine {
     return {
       ...result,
       records: result.records.map(
-        item => new Record<RecordType>(this.schema.get(collectionName), item),
+        item => new Record<RecordType>(this.schema.get(collectionName), item)
       ),
     };
   }
@@ -138,7 +138,7 @@ export class RecordEngine {
   async expand<RecordType extends object = {}>(
     record: Record<RecordType>,
     paths: string[],
-    depth = 3,
+    depth = 3
   ) {
     for (const path of paths) {
       const [fk, ...rest] = path.split('.');
@@ -161,13 +161,13 @@ export class RecordEngine {
         if (fieldSchema.via) {
           const page = await this.find(
             fieldSchema.collection,
-            `${fieldSchema.via} = "${record.id}"`,
+            `${fieldSchema.via} = "${record.id}"`
           );
           queue = page.records;
         } else {
           const fieldRecord = await this.get(
             fieldSchema.collection,
-            record.get(fk as any) as string,
+            record.get(fk as any) as string
           );
           queue = [fieldRecord];
         }
@@ -189,10 +189,7 @@ export class Record<RecordType extends object = {}> {
   private dirty: boolean = false;
   public expand: any;
 
-  constructor(
-    public schema: Schema,
-    private _data: RecordType & RecordData,
-  ) {}
+  constructor(public schema: Schema, private _data: RecordType & RecordData) {}
 
   get id() {
     if (!this._data)

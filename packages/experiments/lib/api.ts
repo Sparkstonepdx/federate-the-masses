@@ -6,7 +6,7 @@ import {
   Shares,
   ShareSubscribers,
   ShareUpdates,
-} from './core-record-types';
+} from '../../shared/core-record-types';
 
 const app = new Hono();
 export default app;
@@ -28,6 +28,27 @@ app.get('/invite/:invite_id', async c => {
 app.get('/identity', async c => {
   const server = c.get('server');
   return c.json(await server.getIdentity());
+});
+
+app.get('/collections', async c => {
+  const server = c.get('server');
+  return c.json({ message: 'not implemented' }, 500);
+});
+
+app.get('/collections/:collection', async c => {
+  const server = c.get('server');
+  const collectionName = c.req.param('collection');
+
+  const schema = await server.schema.get(collectionName);
+  return c.json(schema);
+});
+
+app.get('/collections/:collection/records', async c => {
+  const server = c.get('server');
+  const collectionName = c.req.param('collection');
+
+  const records = await server.records.list(collectionName);
+  return c.json(records);
 });
 
 app.get('/collections/:collection/records/:id', async c => {
@@ -54,12 +75,12 @@ app.post('/share/:share_id/sync/initial', async c => {
   const subscribingServer = await server.records.upsert<Servers>(
     'servers',
     body.subscriber.id,
-    body.subscriber,
+    body.subscriber
   );
 
   let shareSubscriber = await server.records.findOne<ShareSubscribers>(
     'share_subscribers',
-    `share = '${shareId}' and subscribing_server = '${subscribingServer.id}'`,
+    `share = '${shareId}' and subscribing_server = '${subscribingServer.id}'`
   );
   if (!shareSubscriber)
     shareSubscriber = await server.records.create<ShareSubscribers>('share_subscribers', {
@@ -69,14 +90,14 @@ app.post('/share/:share_id/sync/initial', async c => {
 
   const dependencies = await server.records.find<ShareDependencies>(
     'share_dependencies',
-    `share = '${shareId}'`,
+    `share = '${shareId}'`
   );
 
   const records = await Promise.all(
     dependencies.records.map(async dep => {
       const record = await server.records.get(dep.get('child_collection'), dep.get('child_id'));
       return record;
-    }),
+    })
   );
 
   return c.json({
@@ -93,7 +114,7 @@ app.post('/share/:share_id/sync/incremental', async c => {
 
   const updates = await server.records.find<ShareUpdates>(
     `share_updates`,
-    `created_at > '${since}'`,
+    `created_at > '${since}'`
   );
 
   // TODO: compress update list here so we only transfer each record once

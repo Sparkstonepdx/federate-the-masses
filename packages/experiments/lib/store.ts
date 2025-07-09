@@ -1,4 +1,4 @@
-import { RecordPage } from './core-record-types';
+import { RecordPage } from '../../shared/core-record-types';
 import { evaluateFilter } from './sql-filter';
 
 export interface RecordData {

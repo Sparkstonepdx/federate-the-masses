@@ -1,5 +1,5 @@
-import { Schema } from '../core-record-types';
-import systemSchema from '../system-schema';
+import { Schema } from '../../../shared/core-record-types';
+import systemSchema from '../../../shared/system-schema';
 
 /*
     list-1 (Project Alpha) 5 items (task-3 twice)

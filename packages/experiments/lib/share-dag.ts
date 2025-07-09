@@ -1,4 +1,4 @@
-import { ShareDependencies, Shares, ShareUpdates } from './core-record-types';
+import { ShareDependencies, Shares, ShareUpdates } from '../../shared/core-record-types';
 import type Server from './server';
 import { Record, RecordEngine } from './records';
 

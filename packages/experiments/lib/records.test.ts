@@ -1,9 +1,9 @@
-import { expect, test, vi } from 'vitest';
+import { expect, test } from 'vitest';
+import { data, schema } from '../../end-to-end-tests/lib/mock-data/tasks';
+import { prettyPrint, prettyPrintArray } from '../../shared/string';
+import { SchemaEngine } from './schema';
 import Server from './server';
 import { MemoryStore } from './store';
-import { SchemaEngine } from './schema';
-import { data, schema } from './mock-data/tasks';
-import { prettyPrint, prettyPrintArray } from './string';
 
 test('expand single forward relation', async () => {
   const server = new Server({

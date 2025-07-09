@@ -1,12 +1,11 @@
-import { expect, test, vi } from 'vitest';
-import { createDependencyTree } from './share-dag';
-import Server from './server';
-import { MemoryStore } from './store';
-import systemSchema from './system-schema';
+import { expect, test } from 'vitest';
+import { Shares } from '../../shared/core-record-types';
+import { data, schema } from '../../end-to-end-tests/lib/mock-data/tasks';
 import { SchemaEngine } from './schema';
-import { Schema, Shares } from './core-record-types';
-import { prettyPrintArray } from './string';
-import { data, schema } from './mock-data/tasks';
+import Server from './server';
+import { createDependencyTree } from './share-dag';
+import { MemoryStore } from './store';
+import { prettyPrintArray } from '../../shared/string';
 
 test('dep list-1', async () => {
   const server = new Server({
