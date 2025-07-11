@@ -3,17 +3,9 @@ import { HooksEngine } from './hooks';
 import { SchemaEngine } from './schema';
 import { FindOptions, RecordData, Store } from './store';
 import { prettyPrint } from '../../shared/string';
+import { generateURN } from '../../shared/urn';
 
-let lastId = 0;
 type Expand<T> = T extends infer O ? { [K in keyof O]: O[K] } : never;
-
-export function generateId() {
-  return `${lastId++}`;
-}
-
-export function generateURN(collectionName: string, host: string) {
-  return `urn:${collectionName}:${generateId()}@${host}`;
-}
 
 export class RecordEngine {
   constructor(
@@ -30,14 +22,13 @@ export class RecordEngine {
     const recordSchema = this.schema.get(collectionName);
     if (!recordSchema) throw new Error(`Unknown collection: ${collectionName}`);
 
-    const id = generateURN(collectionName, this.serverUrl);
     const now = new Date().toISOString();
+    data.id ??= generateURN(collectionName, this.serverUrl);
+    data.created_at ??= now;
+    data.modified_at ??= data.created_at;
 
     const recordData = {
-      id,
       host: this.serverUrl,
-      created_at: now,
-      modified_at: now,
       ...data,
     } as RecordType & RecordData;
 

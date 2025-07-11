@@ -128,6 +128,8 @@ test('when deleting a shared record, update the relevant records', async () => {
     )
   ).toMatchInlineSnapshot(`
     {
+      "page": 1,
+      "perPage": 500,
       "records": [
         "[share_updates:urn:share_updates:3@test-url.com] share: "urn:shares:0@server1.com", record_id: "doc-2", action: "delete"",
       ],
@@ -161,6 +163,8 @@ test('when deleting a shared record, update the relevant records', async () => {
     )
   ).toMatchInlineSnapshot(`
     {
+      "page": 1,
+      "perPage": 500,
       "records": [
         "[share_updates:urn:share_updates:4@test-url.com] record_id: "b", action: "delete"",
         "[share_updates:urn:share_updates:5@test-url.com] record_id: "d", action: "delete"",
@@ -288,6 +292,8 @@ test('update a record that is currently shared', async () => {
     )
   ).toMatchInlineSnapshot(`
     {
+      "page": 1,
+      "perPage": 500,
       "records": [
         "[share_updates:urn:share_updates:13@test-url.com] share: "urn:shares:0@server1.com", action: "create", record_id: "b"",
         "[share_updates:urn:share_updates:15@test-url.com] share: "urn:shares:0@server1.com", action: "create", record_id: "d"",

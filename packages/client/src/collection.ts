@@ -1,5 +1,6 @@
 import { FindOptions } from '../../experiments/lib/store';
 import { Fetch } from '../../shared/types';
+import { generateURN } from '../../shared/urn';
 
 interface CollectionOpts {
   cache: Map<string, string>;
@@ -67,11 +68,37 @@ export class Collection {
     return response.json();
   }
 
-  findOne() {
-    throw new Error('not implemented');
+  async findOne(options: FindOptions = {}) {
+    options.perPage = 1;
+
+    return await this.find(options);
   }
 
-  create() {
+  async create(data: any) {
+    const now = new Date().toISOString();
+    data.id = generateURN(this.collectionName, this.opts.serverUrl);
+    data.created_at ??= now;
+    data.modified_at ??= now;
+    data.host = this.opts.serverUrl;
+
+    const url = new URL(`/api/collections/${this.collectionName}/records`, this.opts.serverUrl);
+
+    const formData = new FormData();
+    for (const key in data) {
+      if (data.hasOwnProperty(key)) {
+        formData.append(key, data[key]);
+      }
+    }
+
+    const response = await this.opts.fetch(url, { method: 'post', body: formData });
+    if (!response.ok) {
+      throw new Error('Failed to create record', { cause: response });
+    }
+
+    return response.json();
+  }
+
+  async upsert(data: any) {
     throw new Error('not implemented');
   }
 

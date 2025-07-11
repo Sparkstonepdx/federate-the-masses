@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
 import apiRouter from './api';
 import { Store } from './store';
-import { generateId, Record, RecordEngine } from './records';
+import { Record, RecordEngine } from './records';
+import { generateId } from '../../shared/urn';
 import { HooksEngine } from './hooks';
 import { createDependencyTree } from './share-dag';
 import { Servers, Shares } from '../../shared/core-record-types';
@@ -103,6 +104,7 @@ export default class Server {
 
     const response = await this.fetch(inviteUrlString);
     if (!response.ok) {
+      console.log({ response });
       throw new Error('failed to fetch invite details', { cause: response });
     }
     const { invite, access_token, share } = await response.json();

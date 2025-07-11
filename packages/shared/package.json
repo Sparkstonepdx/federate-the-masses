@@ -12,5 +12,8 @@
   "packageManager": "pnpm@10.12.1",
   "devDependencies": {
     "lodash-es": "^4.17.21"
+  },
+  "dependencies": {
+    "nanoid": "^5.1.5"
   }
 }

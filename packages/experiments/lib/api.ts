@@ -68,6 +68,16 @@ app.get('/collections/:collection/records/:id', async c => {
   return c.json(record);
 });
 
+app.post(`/collections/:collection/records`, async c => {
+  const server = c.get('server');
+  const collectionName = c.req.param('collection');
+
+  const record = await c.req.parseBody();
+
+  const result = await server.records.create(collectionName, record);
+  return c.json(result);
+});
+
 app.post('/share/:share_id/sync/initial', async c => {
   const server = c.get('server');
   const shareId = c.req.param('share_id');

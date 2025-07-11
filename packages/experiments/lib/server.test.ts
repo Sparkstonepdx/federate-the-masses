@@ -108,6 +108,7 @@ test('can share and accept invite', async () => {
   vi.setSystemTime(new Date(2000, 1, 1, 13));
 
   const invite = await server1.createInviteLink({ auth: { record: { id: 'p1' } } }, 'folders', 'a');
+
   expect(invite).toMatchInlineSnapshot(`"/api/invite/urn:invites:9@server1.com?sec=8"`);
 
   let share = await server2.acceptInvite(
