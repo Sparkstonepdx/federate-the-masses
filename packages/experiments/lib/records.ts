@@ -1,7 +1,7 @@
 import { RecordPage, Schema } from '../../shared/core-record-types';
 import { HooksEngine } from './hooks';
 import { SchemaEngine } from './schema';
-import { RecordData, Store } from './store';
+import { FindOptions, RecordData, Store } from './store';
 import { prettyPrint } from '../../shared/string';
 
 let lastId = 0;
@@ -119,18 +119,27 @@ export class RecordEngine {
     };
   }
 
-  async find<RecordType extends object = {}>(collectionName: string, filter: string) {
-    const result = (await this.store.find(collectionName, filter)) as RecordPage<
+  async find<RecordType extends object = {}>(collectionName: string, options: FindOptions) {
+    options.page ??= 1;
+    options.perPage ??= 500;
+    const result = (await this.store.find(collectionName, options)) as RecordPage<
       RecordType & RecordData
     >;
+    let records = result.records.map(item => new Record(this.schema.get(collectionName), item));
+    if (options.expand) {
+      await Promise.all(records.map(record => this.expand(record, options.expand!)));
+    }
+
     return {
       ...result,
-      records: result.records.map(item => new Record(this.schema.get(collectionName), item)),
+      page: options.page,
+      perPage: options.perPage,
+      records,
     };
   }
 
-  async findOne<RecordType extends object = {}>(collectionName: string, filter: string) {
-    const result = await this.find<RecordType>(collectionName, filter);
+  async findOne<RecordType extends object = {}>(collectionName: string, options: FindOptions) {
+    const result = await this.find<RecordType>(collectionName, options);
 
     return result.records[0];
   }
@@ -159,10 +168,9 @@ export class RecordEngine {
         queue = Array.isArray(existingExpand) ? existingExpand : [existingExpand];
       } else {
         if (fieldSchema.via) {
-          const page = await this.find(
-            fieldSchema.collection,
-            `${fieldSchema.via} = "${record.id}"`
-          );
+          const page = await this.find(fieldSchema.collection, {
+            filter: `${fieldSchema.via} = "${record.id}"`,
+          });
           queue = page.records;
         } else {
           const fieldRecord = await this.get(

@@ -30,7 +30,7 @@ test('dep list-1', async () => {
     share.id
   );
 
-  let list = await server.records.find('share_dependencies', `share = '${share.id}'`);
+  let list = await server.records.find('share_dependencies', { filter: `share = '${share.id}'` });
 
   expect(list.records.length).toEqual(5);
 
@@ -68,7 +68,7 @@ test('dep list-2', async () => {
     share.id
   );
 
-  const list = await server.records.find('share_dependencies', `share = '${share.id}'`);
+  const list = await server.records.find('share_dependencies', { filter: `share = '${share.id}'` });
 
   expect(list.records.length).toEqual(2);
 
@@ -101,7 +101,7 @@ test('dep list-3', async () => {
     share.id
   );
 
-  const list = await server.records.find('share_dependencies', `share = '${share.id}'`);
+  const list = await server.records.find('share_dependencies', { filter: `share = '${share.id}'` });
 
   expect(list.records.length).toEqual(2);
 
@@ -134,7 +134,7 @@ test('dep task-3', async () => {
     share.id
   );
 
-  const list = await server.records.find('share_dependencies', `share = '${share.id}'`);
+  const list = await server.records.find('share_dependencies', { filter: `share = '${share.id}'` });
 
   expect(list.records.length).toEqual(1);
 

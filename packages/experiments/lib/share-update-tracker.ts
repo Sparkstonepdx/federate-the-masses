@@ -30,7 +30,9 @@ export async function findRelatedRecords<RecordType extends object = {}>(
   for (const [fieldName, fieldSchema] of Object.entries(record.schema.fields)) {
     if (fieldSchema.type !== 'relation') continue;
     if (fieldSchema.via && !ignoreViaRecords) {
-      const result = await records.find(fieldSchema.collection, `${fieldName} = '${record.id}'`);
+      const result = await records.find(fieldSchema.collection, {
+        filter: `${fieldName} = '${record.id}'`,
+      });
       references.push(
         ...result.records.map(
           record =>
@@ -64,10 +66,9 @@ export async function afterCreate(records: RecordEngine, params: BaseParams) {
   const record = new Record(params.recordSchema, params.recordData);
   const relatedRecords = await findRelatedRecords(records, record, true);
 
-  const relatedDependencies = await records.find<ShareDependencies>(
-    'share_dependencies',
-    `child_id in ('${relatedRecords.map(record => record.record.id).join("', '")}')`
-  );
+  const relatedDependencies = await records.find<ShareDependencies>('share_dependencies', {
+    filter: `child_id in ('${relatedRecords.map(record => record.record.id).join("', '")}')`,
+  });
 
   let shareIds = new Set<string>();
   let parentIds = new Set<string>();
@@ -125,10 +126,9 @@ export async function afterUpdate(records: RecordEngine, params: HookFnParams<an
     }
   }
 
-  const existingParentDeps = await records.find<ShareDependencies>(
-    'share_dependencies',
-    `child_id = '${record.id}'`
-  );
+  const existingParentDeps = await records.find<ShareDependencies>('share_dependencies', {
+    filter: `child_id = '${record.id}'`,
+  });
 
   // if we removed a field that linked it to a parent, we should delete the tree
   for (const parentDep of existingParentDeps.records) {
@@ -144,10 +144,9 @@ export async function afterUpdate(records: RecordEngine, params: HookFnParams<an
 
   for (const changedField of changedFields) {
     if (!record.get(changedField.name as string)) continue;
-    let newShareDeps = await records.find<ShareDependencies>(
-      'share_dependencies',
-      `child_id = '${record.get(changedField.name)}'`
-    );
+    let newShareDeps = await records.find<ShareDependencies>('share_dependencies', {
+      filter: `child_id = '${record.get(changedField.name)}'`,
+    });
     for (const dep of newShareDeps.records) {
       const parentRecord = await records.get<any>(dep.get('child_collection'), dep.get('child_id'));
       if (!parentRecord) throw new Error('failed to fetch referenced record');
@@ -166,10 +165,9 @@ export async function afterUpdate(records: RecordEngine, params: HookFnParams<an
     }
   }
 
-  const shareDependencies = await records.find<ShareDependencies>(
-    'share_dependencies',
-    `child_id = '${params.recordData.id}'`
-  );
+  const shareDependencies = await records.find<ShareDependencies>('share_dependencies', {
+    filter: `child_id = '${params.recordData.id}'`,
+  });
   let visitedShares = new Set();
   for (const shareDependency of shareDependencies.records) {
     if (visitedShares.has(shareDependency.get('share'))) {
@@ -189,10 +187,9 @@ export async function afterDelete(records: RecordEngine, params: BaseParams) {
   if (params.recordSchema.untrackSharing) return;
 
   const record = new Record(params.recordSchema, params.recordData);
-  const relatedDependencies = await records.find<ShareDependencies>(
-    'share_dependencies',
-    `child_id = '${record.id}'`
-  );
+  const relatedDependencies = await records.find<ShareDependencies>('share_dependencies', {
+    filter: `child_id = '${record.id}'`,
+  });
 
   for (const child of relatedDependencies.records) {
     await deleteDependencyTree(records, child);

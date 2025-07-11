@@ -9,12 +9,41 @@ export interface RecordData {
   host: string;
 }
 
+export interface FindOptions {
+  filter?: string;
+  page?: number;
+  perPage?: number;
+  sort?: string;
+  fields?: string;
+  expand?: string[];
+}
+
 export interface Store {
   get<Record>(collectionName: string, id: string): Promise<(Record & RecordData) | undefined>;
   set(collectionName: string, id: string, value: RecordData): Promise<void>;
   list<Record>(CollectionName: string): Promise<RecordPage<Record & RecordData>>;
-  find<Record>(collectionName: string, filter: string): Promise<RecordPage<Record & RecordData>>;
+  find<Record>(
+    collectionName: string,
+    options: FindOptions
+  ): Promise<RecordPage<Record & RecordData>>;
   delete(collectionName: string, id: string): Promise<void>;
+}
+
+/// Mock In Memory Store
+
+interface SortSpec {
+  field: string;
+  direction: 'asc' | 'desc';
+}
+
+function parseSort(sortStr: string): SortSpec[] {
+  return sortStr.split(',').map(part => {
+    const trimmed = part.trim();
+    if (trimmed.startsWith('-')) {
+      return { field: trimmed.slice(1), direction: 'desc' };
+    }
+    return { field: trimmed, direction: 'asc' };
+  });
 }
 
 export class MemoryStore implements Store {
@@ -48,10 +77,35 @@ export class MemoryStore implements Store {
     };
   }
 
-  async find<Record>(collection: string, filter: string) {
-    const results = Array.from(this.db.get(collection)?.values() ?? []) as Record[];
+  async find<Record>(collection: string, options: FindOptions) {
+    options.page ??= 1;
+    options.perPage ??= 500;
+    let records = Array.from(this.db.get(collection)?.values() ?? []) as Record[];
+    if (options.filter) {
+      records = records.filter(item => evaluateFilter(item, options.filter!));
+    }
+
+    if (options.sort) {
+      const sortSpec = parseSort(options.sort);
+      records.sort((a, b) => {
+        for (const { field, direction } of sortSpec) {
+          const aVal = a[field];
+          const bVal = b[field];
+          if (aVal === bVal) continue;
+          const cmp = aVal > bVal ? 1 : -1;
+          return direction === 'asc' ? cmp : -cmp;
+        }
+        return 0;
+      });
+    }
+
+    if (options.page) {
+      let offset = (options.page - 1) * options.perPage;
+      records = records.splice(offset, options.perPage);
+    }
+
     return {
-      records: results.filter(item => evaluateFilter(item, filter)),
+      records,
     };
   }
 

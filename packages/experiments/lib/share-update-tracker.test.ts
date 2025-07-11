@@ -121,7 +121,9 @@ test('when deleting a shared record, update the relevant records', async () => {
 
   expect(
     await prettyList(
-      records.find('share_updates', `created_at > '${new Date(2000, 1, 2, 12).toISOString()}'`),
+      records.find('share_updates', {
+        filter: `created_at > '${new Date(2000, 1, 2, 12).toISOString()}'`,
+      }),
       ['share', 'record_id', 'action']
     )
   ).toMatchInlineSnapshot(`
@@ -152,7 +154,9 @@ test('when deleting a shared record, update the relevant records', async () => {
 
   expect(
     await prettyList(
-      records.find('share_updates', `created_at > '${new Date(2000, 1, 2, 13).toISOString()}'`),
+      records.find('share_updates', {
+        filter: `created_at > '${new Date(2000, 1, 2, 13).toISOString()}'`,
+      }),
       ['record_id', 'action']
     )
   ).toMatchInlineSnapshot(`
@@ -277,7 +281,9 @@ test('update a record that is currently shared', async () => {
 
   expect(
     await prettyList(
-      records.find('share_updates', `created_at > '${new Date(2000, 1, 3, 12).toISOString()}'`),
+      records.find('share_updates', {
+        filter: `created_at > '${new Date(2000, 1, 3, 12).toISOString()}'`,
+      }),
       ['share', 'action', 'record_id']
     )
   ).toMatchInlineSnapshot(`

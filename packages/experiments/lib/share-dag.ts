@@ -51,10 +51,9 @@ async function getReferencedRecords(records: RecordEngine, record: Record<any>) 
   for (const [fieldName, fieldSchema] of Object.entries(record.schema.fields)) {
     if (fieldSchema.type !== 'relation') continue;
     if (fieldSchema.via) {
-      const result = await records.find(
-        fieldSchema.collection,
-        `${fieldSchema.via} = '${record.id}'`
-      );
+      const result = await records.find(fieldSchema.collection, {
+        filter: `${fieldSchema.via} = '${record.id}'`,
+      });
       queueItems.push(
         ...result.records.map(
           r =>
@@ -86,10 +85,9 @@ export async function deleteDependencyTree(
   records: RecordEngine,
   record: Record<ShareDependencies>
 ) {
-  let children = await records.find<ShareDependencies>(
-    'share_dependencies',
-    `parent_id = '${record.get('child_id')}' and share = '${record.get('share')}' `
-  );
+  let children = await records.find<ShareDependencies>('share_dependencies', {
+    filter: `parent_id = '${record.get('child_id')}' and share = '${record.get('share')}' `,
+  });
   await records.delete('share_dependencies', record.id);
   await records.create<ShareUpdates>('share_updates', {
     share: record.get('share'),
@@ -109,9 +107,8 @@ export async function deleteDependencyTree(
       });
     }
     let childIds = children.records.map(child => child.get('child_id'));
-    children = await records.find<ShareDependencies>(
-      'share_dependencies',
-      `share = '${record.get('share')}' and parent_id in ('${childIds.join(`', '`)}')`
-    );
+    children = await records.find<ShareDependencies>('share_dependencies', {
+      filter: `share = '${record.get('share')}' and parent_id in ('${childIds.join(`', '`)}')`,
+    });
   }
 }

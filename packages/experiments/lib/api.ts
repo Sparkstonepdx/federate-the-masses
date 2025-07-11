@@ -47,7 +47,10 @@ app.get('/collections/:collection/records', async c => {
   const server = c.get('server');
   const collectionName = c.req.param('collection');
 
-  const records = await server.records.list(collectionName);
+  const queryParams = c.req.query();
+  queryParams.expand = queryParams.expand?.split(',');
+
+  const records = await server.records.find(collectionName, queryParams);
   return c.json(records);
 });
 
@@ -78,20 +81,18 @@ app.post('/share/:share_id/sync/initial', async c => {
     body.subscriber
   );
 
-  let shareSubscriber = await server.records.findOne<ShareSubscribers>(
-    'share_subscribers',
-    `share = '${shareId}' and subscribing_server = '${subscribingServer.id}'`
-  );
+  let shareSubscriber = await server.records.findOne<ShareSubscribers>('share_subscribers', {
+    filter: `share = '${shareId}' and subscribing_server = '${subscribingServer.id}'`,
+  });
   if (!shareSubscriber)
     shareSubscriber = await server.records.create<ShareSubscribers>('share_subscribers', {
       share: shareId,
       subscribing_server: subscribingServer.id,
     });
 
-  const dependencies = await server.records.find<ShareDependencies>(
-    'share_dependencies',
-    `share = '${shareId}'`
-  );
+  const dependencies = await server.records.find<ShareDependencies>('share_dependencies', {
+    filter: `share = '${shareId}'`,
+  });
 
   const records = await Promise.all(
     dependencies.records.map(async dep => {
@@ -112,10 +113,9 @@ app.post('/share/:share_id/sync/incremental', async c => {
   const body = await c.req.json();
   const since = c.req.query('since');
 
-  const updates = await server.records.find<ShareUpdates>(
-    `share_updates`,
-    `created_at > '${since}'`
-  );
+  const updates = await server.records.find<ShareUpdates>(`share_updates`, {
+    filter: `created_at > '${since}'`,
+  });
 
   // TODO: compress update list here so we only transfer each record once
 

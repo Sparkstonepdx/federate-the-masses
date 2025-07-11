@@ -1,3 +1,4 @@
+import { FindOptions } from '../../experiments/lib/store';
 import { Fetch } from '../../shared/types';
 
 interface CollectionOpts {
@@ -26,17 +27,35 @@ export class Collection {
     throw new Error('not implemented');
   }
 
-  getList() {
-    throw new Error('not implemented');
-  }
-
-  async getFullList() {
+  async find(options: FindOptions = {}) {
     const url = new URL(`/api/collections/${this.collectionName}/records`, this.opts.serverUrl);
+    Object.entries(options).forEach(entry => {
+      url.searchParams.set(entry[0], entry[1]);
+    });
+
     const response = await this.opts.fetch(url);
     if (!response.ok) {
-      throw new Error(`Failed to getFullList`, { cause: response });
+      throw new Error(`Failed to findAll`, { cause: response });
     }
     return response.json();
+  }
+
+  async findAll(options: FindOptions = {}) {
+    let records = [];
+    options.page = 1;
+    options.perPage ??= 500;
+    let lastPayload;
+
+    while (true) {
+      lastPayload = await this.find(options);
+      records.push(...lastPayload.records);
+      if (lastPayload.records.length < options.perPage) break;
+      options.page++;
+    }
+
+    return {
+      records,
+    };
   }
 
   async schema() {
@@ -48,7 +67,7 @@ export class Collection {
     return response.json();
   }
 
-  getOne() {
+  findOne() {
     throw new Error('not implemented');
   }
 
