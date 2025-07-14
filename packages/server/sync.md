@@ -61,12 +61,4 @@ sequenceDiagram
     server a ->>db a: delete all share updates older than earliest last sync
     server a ->>-server b: send all share updates since [last sync timestamp]
     db b ->>server b: merge records with crdt
-
-
-
-
-
-
-
-
 ```

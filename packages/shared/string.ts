@@ -1,5 +1,5 @@
 import { omit, pick } from 'lodash-es';
-import { Record } from '../experiments/lib/records';
+import { Record } from '../server/lib/records';
 
 export function prettyPrint<RecordType extends object = {}>(
   record?: Record<RecordType> | null,

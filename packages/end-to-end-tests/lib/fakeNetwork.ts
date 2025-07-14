@@ -1,4 +1,4 @@
-import type Server from '../../experiments/lib/server';
+import type Server from '../../server/lib/server';
 
 export class FakeNetwork {
   private addresses = {};

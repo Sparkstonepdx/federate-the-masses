@@ -1,4 +1,4 @@
-import { FindOptions } from '../../experiments/lib/store';
+import { FindOptions, RecordData } from '../../server/lib/store';
 import { Fetch } from '../../shared/types';
 import { generateURN } from '../../shared/urn';
 
@@ -8,7 +8,7 @@ interface CollectionOpts {
   serverUrl: string;
 }
 
-export class Collection {
+export class Collection<CollectionData extends RecordData> {
   constructor(private collectionName: string, private opts: CollectionOpts) {}
 
   authWithPassword(email: string, password: string) {}
@@ -74,11 +74,11 @@ export class Collection {
     return await this.find(options);
   }
 
-  async create(data: any) {
+  async create(data: Partial<CollectionData> = {}) {
     const now = new Date().toISOString();
     data.id = generateURN(this.collectionName, this.opts.serverUrl);
     data.created_at ??= now;
-    data.modified_at ??= now;
+    data.modified_at ??= data.created_at;
     data.host = this.opts.serverUrl;
 
     const url = new URL(`/api/collections/${this.collectionName}/records`, this.opts.serverUrl);
@@ -98,17 +98,71 @@ export class Collection {
     return response.json();
   }
 
-  async upsert(data: any) {
-    throw new Error('not implemented');
+  async upsert(data: CollectionData) {
+    const now = new Date().toISOString();
+    data.id ??= generateURN(this.collectionName, this.opts.serverUrl);
+    data.created_at ??= now;
+    data.modified_at = now;
+    data.host = this.opts.serverUrl;
+
+    const url = new URL(
+      `/api/collections/${this.collectionName}/records/${encodeURIComponent(data.id)}`,
+      this.opts.serverUrl
+    );
+
+    const formData = new FormData();
+    for (const key in data) {
+      if (data.hasOwnProperty(key)) {
+        formData.append(key, data[key]);
+      }
+    }
+
+    const response = await this.opts.fetch(url, { method: 'PUT', body: formData });
+    if (!response.ok) {
+      throw new Error('Failed to upsert record', { cause: response });
+    }
+
+    return response.json();
   }
 
-  update() {
-    throw new Error('not implemented');
+  async update(id: string, data: Partial<CollectionData>) {
+    const now = new Date().toISOString();
+    data.created_at ??= now;
+    data.modified_at = now;
+
+    const url = new URL(
+      `/api/collections/${this.collectionName}/records/${encodeURIComponent(id)}`,
+      this.opts.serverUrl
+    );
+
+    const formData = new FormData();
+    for (const key in data) {
+      if (data.hasOwnProperty(key)) {
+        formData.append(key, data[key]);
+      }
+    }
+
+    const response = await this.opts.fetch(url, { method: 'PATCH', body: formData });
+    if (!response.ok) {
+      throw new Error('Failed to update record', { cause: response });
+    }
+
+    return response.json();
   }
 
-  delete() {
-    throw new Error('not implemented');
+  async delete(id: string) {
+    const url = new URL(
+      `/api/collections/${this.collectionName}/records/${encodeURIComponent(id)}`,
+      this.opts.serverUrl
+    );
+
+    const response = await this.opts.fetch(url, { method: 'DELETE' });
+    if (!response.ok) {
+      throw new Error('Failed to delete record', { cause: response });
+    }
   }
 
-  subscribe() {}
+  subscribe() {
+    throw new Error('not implemented');
+  }
 }

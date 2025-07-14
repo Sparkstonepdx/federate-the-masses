@@ -5,7 +5,7 @@ interface ConstructorOptions {
   fetch?: any;
 }
 
-export default class Client {
+export default class Client<Schema> {
   private serverUrl: string;
   private fetch: Fetch;
 

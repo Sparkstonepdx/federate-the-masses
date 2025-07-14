@@ -7,6 +7,7 @@ import {
   ShareSubscribers,
   ShareUpdates,
 } from '../../shared/core-record-types';
+import collectionsRouter from './api/collections';
 
 const app = new Hono();
 export default app;
@@ -34,49 +35,7 @@ app.get('/collections', async c => {
   const server = c.get('server');
   return c.json({ message: 'not implemented' }, 500);
 });
-
-app.get('/collections/:collection', async c => {
-  const server = c.get('server');
-  const collectionName = c.req.param('collection');
-
-  const schema = await server.schema.get(collectionName);
-  return c.json(schema);
-});
-
-app.get('/collections/:collection/records', async c => {
-  const server = c.get('server');
-  const collectionName = c.req.param('collection');
-
-  const queryParams = c.req.query();
-  queryParams.expand = queryParams.expand?.split(',');
-
-  const records = await server.records.find(collectionName, queryParams);
-  return c.json(records);
-});
-
-app.get('/collections/:collection/records/:id', async c => {
-  const server = c.get('server');
-  const collectionName = c.req.param('collection');
-  const recordId = c.req.param('id');
-
-  // todo: add this back when we have collections
-  // if (!server.records[collectionName])
-  //   return c.json({ message: `collection not found: ${collectionName}` }, 404);
-
-  const record = await server.records.get(collectionName, recordId);
-  if (!record) return c.json({ message: `${collectionName} record not found: ${recordId}` }, 404);
-  return c.json(record);
-});
-
-app.post(`/collections/:collection/records`, async c => {
-  const server = c.get('server');
-  const collectionName = c.req.param('collection');
-
-  const record = await c.req.parseBody();
-
-  const result = await server.records.create(collectionName, record);
-  return c.json(result);
-});
+app.route(`/collections/:collection`, collectionsRouter);
 
 app.post('/share/:share_id/sync/initial', async c => {
   const server = c.get('server');
