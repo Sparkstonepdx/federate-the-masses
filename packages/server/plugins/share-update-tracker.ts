@@ -1,9 +1,19 @@
-import { pick } from 'lodash-es';
 import { SchemaField, ShareDependencies, ShareUpdates } from '../../shared/core-record-types';
-import { BaseParams, HookFnParams } from './hooks';
-import { Record, RecordEngine } from './records';
-import { createDependencyTree, deleteDependencyTree } from './share-dag';
 import { prettyPrint } from '../../shared/string';
+import { BaseParams, HookFnParams } from '../lib/hooks';
+import { Record, RecordEngine } from '../lib/records';
+import type Server from '../lib/server';
+import { createDependencyTree, deleteDependencyTree } from '../lib/share-dag';
+
+export default function ShareUpdateTracker() {
+  return {
+    name: 'share-update-tracker-plugin',
+    setup(server: Server) {
+      const onDestroy = attachShareUpdateTracker(server.records);
+      server.onDestroy(onDestroy);
+    },
+  };
+}
 
 export function attachShareUpdateTracker(records: RecordEngine) {
   let listeners = [

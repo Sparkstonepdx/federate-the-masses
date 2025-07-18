@@ -12,7 +12,7 @@ export default class Client<Schema> {
   private cache: Map<string, string>;
 
   constructor(constructorOptions: Partial<ConstructorOptions> = {}) {
-    this.fetch = constructorOptions.fetch ?? globalThis.fetch;
+    this.fetch = constructorOptions.fetch ?? globalThis.fetch.bind(globalThis);
     this.cache = new Map();
   }
 

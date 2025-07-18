@@ -92,52 +92,50 @@ test('can getFullList', async () => {
   const records = await client.collection('tasks').findAll();
 
   expect(records).toMatchInlineSnapshot(`
-    {
-      "records": [
-        {
-          "collection": "tasks",
-          "data": {
-            "content": "Create wireframes and mockups",
-            "id": "task-1",
-            "list": "list-1",
-            "title": "Design homepage",
-          },
+    [
+      {
+        "collection": "tasks",
+        "data": {
+          "content": "Create wireframes and mockups",
           "id": "task-1",
+          "list": "list-1",
+          "title": "Design homepage",
         },
-        {
-          "collection": "tasks",
-          "data": {
-            "content": "Convert design into code",
-            "id": "task-2",
-            "list": "list-1",
-            "parent": "task-1",
-            "title": "Develop homepage",
-          },
+        "id": "task-1",
+      },
+      {
+        "collection": "tasks",
+        "data": {
+          "content": "Convert design into code",
           "id": "task-2",
+          "list": "list-1",
+          "parent": "task-1",
+          "title": "Develop homepage",
         },
-        {
-          "collection": "tasks",
-          "data": {
-            "content": "Internal QA and feedback",
-            "id": "task-3",
-            "list": "list-2",
-            "parent": "task-2",
-            "title": "Review homepage",
-          },
+        "id": "task-2",
+      },
+      {
+        "collection": "tasks",
+        "data": {
+          "content": "Internal QA and feedback",
           "id": "task-3",
+          "list": "list-2",
+          "parent": "task-2",
+          "title": "Review homepage",
         },
-        {
-          "collection": "tasks",
-          "data": {
-            "content": "Install PostgreSQL and configure",
-            "id": "task-4",
-            "list": "list-3",
-            "title": "Setup database",
-          },
+        "id": "task-3",
+      },
+      {
+        "collection": "tasks",
+        "data": {
+          "content": "Install PostgreSQL and configure",
           "id": "task-4",
+          "list": "list-3",
+          "title": "Setup database",
         },
-      ],
-    }
+        "id": "task-4",
+      },
+    ]
   `);
 });
 
@@ -168,61 +166,59 @@ test('can findAll with filter', async () => {
   });
 
   expect(records).toMatchInlineSnapshot(`
-    {
-      "records": [
-        {
-          "collection": "tasks",
-          "data": {
-            "content": "Convert design into code",
-            "id": "task-2",
-            "list": "list-1",
-            "parent": "task-1",
-            "title": "Develop homepage",
-          },
-          "expand": {
-            "list": {
-              "collection": "lists",
-              "data": {
-                "id": "list-1",
-                "title": "Project Alpha",
-              },
-              "id": "list-1",
-            },
-            "parent": {
-              "collection": "tasks",
-              "data": {
-                "content": "Create wireframes and mockups",
-                "id": "task-1",
-                "list": "list-1",
-                "title": "Design homepage",
-              },
-              "id": "task-1",
-            },
-          },
+    [
+      {
+        "collection": "tasks",
+        "data": {
+          "content": "Convert design into code",
           "id": "task-2",
+          "list": "list-1",
+          "parent": "task-1",
+          "title": "Develop homepage",
         },
-        {
-          "collection": "tasks",
-          "data": {
-            "content": "Create wireframes and mockups",
-            "id": "task-1",
-            "list": "list-1",
-            "title": "Design homepage",
-          },
-          "expand": {
-            "list": {
-              "collection": "lists",
-              "data": {
-                "id": "list-1",
-                "title": "Project Alpha",
-              },
+        "expand": {
+          "list": {
+            "collection": "lists",
+            "data": {
               "id": "list-1",
+              "title": "Project Alpha",
             },
+            "id": "list-1",
           },
-          "id": "task-1",
+          "parent": {
+            "collection": "tasks",
+            "data": {
+              "content": "Create wireframes and mockups",
+              "id": "task-1",
+              "list": "list-1",
+              "title": "Design homepage",
+            },
+            "id": "task-1",
+          },
         },
-      ],
-    }
+        "id": "task-2",
+      },
+      {
+        "collection": "tasks",
+        "data": {
+          "content": "Create wireframes and mockups",
+          "id": "task-1",
+          "list": "list-1",
+          "title": "Design homepage",
+        },
+        "expand": {
+          "list": {
+            "collection": "lists",
+            "data": {
+              "id": "list-1",
+              "title": "Project Alpha",
+            },
+            "id": "list-1",
+          },
+        },
+        "id": "task-1",
+      },
+    ]
   `);
 });
 
@@ -251,52 +247,50 @@ test('can findAll with paging', async () => {
   });
 
   expect(records).toMatchInlineSnapshot(`
-    {
-      "records": [
-        {
-          "collection": "tasks",
-          "data": {
-            "content": "Create wireframes and mockups",
-            "id": "task-1",
-            "list": "list-1",
-            "title": "Design homepage",
-          },
+    [
+      {
+        "collection": "tasks",
+        "data": {
+          "content": "Create wireframes and mockups",
           "id": "task-1",
+          "list": "list-1",
+          "title": "Design homepage",
         },
-        {
-          "collection": "tasks",
-          "data": {
-            "content": "Convert design into code",
-            "id": "task-2",
-            "list": "list-1",
-            "parent": "task-1",
-            "title": "Develop homepage",
-          },
+        "id": "task-1",
+      },
+      {
+        "collection": "tasks",
+        "data": {
+          "content": "Convert design into code",
           "id": "task-2",
+          "list": "list-1",
+          "parent": "task-1",
+          "title": "Develop homepage",
         },
-        {
-          "collection": "tasks",
-          "data": {
-            "content": "Internal QA and feedback",
-            "id": "task-3",
-            "list": "list-2",
-            "parent": "task-2",
-            "title": "Review homepage",
-          },
+        "id": "task-2",
+      },
+      {
+        "collection": "tasks",
+        "data": {
+          "content": "Internal QA and feedback",
           "id": "task-3",
+          "list": "list-2",
+          "parent": "task-2",
+          "title": "Review homepage",
         },
-        {
-          "collection": "tasks",
-          "data": {
-            "content": "Install PostgreSQL and configure",
-            "id": "task-4",
-            "list": "list-3",
-            "title": "Setup database",
-          },
+        "id": "task-3",
+      },
+      {
+        "collection": "tasks",
+        "data": {
+          "content": "Install PostgreSQL and configure",
           "id": "task-4",
+          "list": "list-3",
+          "title": "Setup database",
         },
-      ],
-    }
+        "id": "task-4",
+      },
+    ]
   `);
 });
 

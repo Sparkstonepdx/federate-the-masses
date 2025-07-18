@@ -1,17 +1,21 @@
 import { Hono } from 'hono';
-import apiRouter from './api';
-import { Store } from './store';
-import { Record, RecordEngine } from './records';
-import { generateId } from '../../shared/urn';
-import { HooksEngine } from './hooks';
-import { createDependencyTree } from './share-dag';
 import { Servers, Shares } from '../../shared/core-record-types';
-import { SchemaEngine } from './schema';
-import { attachShareUpdateTracker } from './share-update-tracker';
 import { Fetch } from '../../shared/types';
+import { generateId } from '../../shared/urn';
+import apiRouter from './api';
+import { HooksEngine } from './hooks';
+import { Record, RecordEngine } from './records';
+import { SchemaEngine } from './schema';
+import { createDependencyTree } from './share-dag';
+import { Store } from './store';
 
 interface Context {
   auth: { record: { id: string } };
+}
+
+interface ServerPlugin {
+  name: string;
+  setup(server: Server): void;
 }
 
 interface ConstructorOptions {
@@ -19,6 +23,7 @@ interface ConstructorOptions {
   schema: SchemaEngine;
   fetch?: any;
   identity: { url: string; public_key: string };
+  plugins?: ServerPlugin[];
 }
 
 export default class Server {
@@ -41,8 +46,6 @@ export default class Server {
     this.identity = Object.assign(options.identity, { host: url.host, id: url.host });
     this.records = new RecordEngine(this.store, this.schema, this.identity.host, new HooksEngine());
 
-    this.cleanupFns.push(attachShareUpdateTracker(this.records));
-
     const honoRouter = new Hono();
     honoRouter.use(async (c, next) => {
       c.set('server', this);
@@ -52,6 +55,10 @@ export default class Server {
     honoRouter.route('/api', apiRouter);
 
     this.honoRouter = honoRouter;
+
+    for (const plugin of options.plugins ?? []) {
+      plugin.setup(this);
+    }
   }
 
   async getIdentity() {
@@ -104,7 +111,6 @@ export default class Server {
 
     const response = await this.fetch(inviteUrlString);
     if (!response.ok) {
-      console.log({ response });
       throw new Error('failed to fetch invite details', { cause: response });
     }
     const { invite, access_token, share } = await response.json();
@@ -159,15 +165,11 @@ export default class Server {
     if (!share) throw new Error(`failed to load share: ${shareId}`);
     await this.records.expand(share, ['server']);
 
-    console.log(share.expand.server.get('url'));
-
     const syncUrl = new URL(
       `/api/share/${share.id}/sync/incremental`,
       share.expand.server.get('url')
     );
     syncUrl.searchParams.set('since', share.get('last_remote_sync'));
-
-    console.log({ syncUrl: syncUrl.toString() });
 
     const response = await this.fetch(syncUrl, {
       method: 'post',
@@ -179,10 +181,8 @@ export default class Server {
     }
 
     const updates = await response.json();
-    console.log({ updates });
 
     for (const update of updates.data.records) {
-      console.dir(update, { depth: 10 });
       switch (update.data.action) {
         case 'update':
           await this.records.update(
@@ -209,6 +209,10 @@ export default class Server {
     for (const fn of this.cleanupFns) {
       fn();
     }
+  }
+
+  onDestroy(callback: Function) {
+    this.cleanupFns.push(callback);
   }
 }
 

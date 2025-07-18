@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { cors } from 'hono/cors';
 import {
   Invites,
   Servers,
@@ -11,6 +12,8 @@ import collectionsRouter from './api/collections';
 
 const app = new Hono();
 export default app;
+
+app.use(cors());
 
 app.get('/invite/:invite_id', async c => {
   const server = c.get('server');

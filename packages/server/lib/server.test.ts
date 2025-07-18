@@ -6,6 +6,7 @@ import systemSchema from '../../shared/system-schema';
 import { Schema, Shares } from '../../shared/core-record-types';
 import { prettyPrint, prettyPrintArray } from '../../shared/string';
 import { FakeNetwork } from '../../end-to-end-tests/lib/fakeNetwork';
+import ShareUpdateTracker from '../plugins/share-update-tracker';
 
 let baseFields = {
   id: 'string',
@@ -93,6 +94,7 @@ test('can share and accept invite', async () => {
       url: 'http://server1.com',
       public_key: '',
     },
+    plugins: [ShareUpdateTracker()],
   });
 
   const server2 = new Server({
@@ -100,6 +102,7 @@ test('can share and accept invite', async () => {
     store: new MemoryStore(server2Data),
     schema: new SchemaEngine(schema),
     identity: { url: 'http://server2.com', public_key: '' },
+    plugins: [ShareUpdateTracker()],
   });
 
   network.register('http://server1.com', server1);
@@ -133,6 +136,7 @@ test('can invite and complete initial sync', async () => {
       url: 'http://server1.com',
       public_key: '',
     },
+    plugins: [ShareUpdateTracker()],
   });
 
   const server2 = new Server({
@@ -140,6 +144,7 @@ test('can invite and complete initial sync', async () => {
     store: new MemoryStore(server2Data),
     schema: new SchemaEngine(schema),
     identity: { url: 'http://server2.com', public_key: '' },
+    plugins: [ShareUpdateTracker()],
   });
 
   network.register('http://server1.com', server1);
@@ -189,6 +194,7 @@ test('can complete incremental sync from host after initial sync', async () => {
       url: 'http://server1.com',
       public_key: '',
     },
+    plugins: [ShareUpdateTracker()],
   });
 
   const server2 = new Server({
@@ -196,6 +202,7 @@ test('can complete incremental sync from host after initial sync', async () => {
     store: new MemoryStore(server2Data),
     schema: new SchemaEngine(schema),
     identity: { url: 'http://server2.com', public_key: '' },
+    plugins: [ShareUpdateTracker()],
   });
 
   network.register('http://server1.com', server1);
@@ -252,6 +259,7 @@ test('can complete multiple incremental syncs from host after initial sync', asy
       url: 'http://server1.com',
       public_key: '',
     },
+    plugins: [ShareUpdateTracker()],
   });
 
   const server2 = new Server({
@@ -259,6 +267,7 @@ test('can complete multiple incremental syncs from host after initial sync', asy
     store: new MemoryStore(server2Data),
     schema: new SchemaEngine(schema),
     identity: { url: 'http://server2.com', public_key: '' },
+    plugins: [ShareUpdateTracker()],
   });
 
   network.register('http://server1.com', server1);

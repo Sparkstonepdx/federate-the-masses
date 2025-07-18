@@ -54,9 +54,7 @@ export class Collection<CollectionData extends RecordData> {
       options.page++;
     }
 
-    return {
-      records,
-    };
+    return records;
   }
 
   async schema() {

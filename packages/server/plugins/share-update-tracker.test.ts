@@ -1,9 +1,9 @@
 import { expect, test, vi } from 'vitest';
-import { RecordEngine } from './records';
-import { SchemaEngine } from './schema';
-import { HooksEngine } from './hooks';
+import { RecordEngine } from '../lib/records';
+import { SchemaEngine } from '../lib/schema';
+import { HooksEngine } from '../lib/hooks';
 import { attachShareUpdateTracker, findRelatedRecords } from './share-update-tracker';
-import { MemoryStore } from './store';
+import { MemoryStore } from '../lib/store';
 import systemSchema from '../../shared/system-schema';
 import { Schema } from '../../shared/core-record-types';
 import { prettyList, prettyPrint } from '../../shared/string';

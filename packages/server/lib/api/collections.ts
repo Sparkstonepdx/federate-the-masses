@@ -28,6 +28,7 @@ app.get('/records', async c => {
   queryParams.expand = queryParams.expand?.split(',');
 
   const records = await server.records.find(collectionName, queryParams);
+
   return c.json(records);
 });
 
