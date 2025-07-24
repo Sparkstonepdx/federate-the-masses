@@ -13,27 +13,33 @@ import systemSchema from '../../../shared/system-schema';
     └── task-4: Setup database
 */
 
-export const schema: Record<string, Schema> = {
-  ...systemSchema,
-  tasks: {
-    collectionName: 'tasks',
-    fields: {
-      list: { type: 'relation', collection: 'lists', required: true },
-      parent: { type: 'relation', collection: 'tasks' },
-      child: { type: 'relation', collection: 'tasks', via: 'parent' },
-      title: { type: 'string' },
-      content: { type: 'string', required: true },
+export const TasksCollection = {
+  collectionName: 'tasks',
+  migrations: [
+    {
+      addFields: {
+        list: { type: 'relation', collection: 'lists', required: true },
+        parent: { type: 'relation', collection: 'tasks' },
+        child: { type: 'relation', collection: 'tasks', via: 'parent' },
+        title: { type: 'string' },
+        content: { type: 'string', required: true },
+      },
     },
-  },
-  lists: {
-    collectionName: 'lists',
-    fields: {
-      list: { type: 'relation', collection: 'lists' },
-      tasks: { type: 'relation', collection: 'tasks', via: 'list' },
-      child_list: { type: 'relation', collection: 'lists', via: 'list' },
-      title: { type: 'string' },
+  ],
+};
+
+export const ListsCollection = {
+  collectionName: 'lists',
+  migrations: [
+    {
+      addFields: {
+        list: { type: 'relation', collection: 'lists' },
+        tasks: { type: 'relation', collection: 'tasks', via: 'list' },
+        child_list: { type: 'relation', collection: 'lists', via: 'list' },
+        title: { type: 'string' },
+      },
     },
-  },
+  ],
 };
 
 export const data = {

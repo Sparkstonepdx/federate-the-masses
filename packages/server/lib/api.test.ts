@@ -1,10 +1,9 @@
 import { test, vi } from 'vitest';
 import Server from './server';
-import { MemoryStore } from './store';
-import { SchemaEngine } from './schema';
+import { SchemaEngine } from './schemaEngine';
 
 test('incremental sync updates', async () => {
-  // const server = new Server({
+  // const server = await Server.create({
   //   store: new MemoryStore(data),
   //   schema: new SchemaEngine(schema),
   //   identity: { url: 'http://test-server.com', public_key: 'asdf' },

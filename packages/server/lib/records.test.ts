@@ -1,14 +1,16 @@
+import { UsersCollection } from '@fedmasses/shared/system-schema';
 import { expect, test } from 'vitest';
-import { data, schema } from '../../end-to-end-tests/lib/mock-data/tasks';
+import { data, ListsCollection, TasksCollection } from '../../end-to-end-tests/lib/mock-data/tasks';
 import { prettyPrint, prettyPrintArray } from '../../shared/string';
-import { SchemaEngine } from './schema';
+import ShareUpdateTracker from '../plugins/share-update-tracker/share-update-tracker';
+import MemoryStore from '../stores/InMemoryStore';
 import Server from './server';
-import { MemoryStore } from './store';
 
 test('expand single forward relation', async () => {
-  const server = new Server({
+  const server = await Server.create({
     store: new MemoryStore(data),
-    schema: new SchemaEngine(schema),
+    schemas: [TasksCollection, ListsCollection, UsersCollection],
+    plugins: [ShareUpdateTracker({ userCollection: 'users' })],
     identity: { url: 'http://test-server.com', public_key: 'asdf' },
   });
 
@@ -23,9 +25,10 @@ test('expand single forward relation', async () => {
 });
 
 test('expand via relation', async () => {
-  const server = new Server({
+  const server = await Server.create({
     store: new MemoryStore(data),
-    schema: new SchemaEngine(schema),
+    schemas: [TasksCollection, ListsCollection, UsersCollection],
+    plugins: [ShareUpdateTracker({ userCollection: 'users' })],
     identity: { url: 'http://test-server.com', public_key: 'asdf' },
   });
 
@@ -40,9 +43,10 @@ test('expand via relation', async () => {
 });
 
 test('expand all tasks', async () => {
-  const server = new Server({
+  const server = await Server.create({
     store: new MemoryStore(data),
-    schema: new SchemaEngine(schema),
+    schemas: [TasksCollection, ListsCollection, UsersCollection],
+    plugins: [ShareUpdateTracker({ userCollection: 'users' })],
     identity: { url: 'http://test-server.com', public_key: 'asdf' },
   });
 
@@ -55,9 +59,10 @@ test('expand all tasks', async () => {
 });
 
 test('expand all tasks with overlap', async () => {
-  const server = new Server({
+  const server = await Server.create({
     store: new MemoryStore(data),
-    schema: new SchemaEngine(schema),
+    schemas: [TasksCollection, ListsCollection, UsersCollection],
+    plugins: [ShareUpdateTracker({ userCollection: 'users' })],
     identity: { url: 'http://test-server.com', public_key: 'asdf' },
   });
 

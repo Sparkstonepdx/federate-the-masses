@@ -1,5 +1,16 @@
 import { Schema } from './core-record-types';
 
+export const UsersCollection = {
+  collectionName: 'users',
+  migrations: [
+    {
+      addFields: {
+        name: { type: 'string' },
+      },
+    },
+  ],
+};
+
 const systemSchema: Record<string, Schema> = {
   // used for url based invites
   invites: {

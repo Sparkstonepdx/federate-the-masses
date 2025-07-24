@@ -1,16 +1,18 @@
 import { expect, test } from 'vitest';
+import { data, ListsCollection, TasksCollection } from '../../end-to-end-tests/lib/mock-data/tasks';
 import { Shares } from '../../shared/core-record-types';
-import { data, schema } from '../../end-to-end-tests/lib/mock-data/tasks';
-import { SchemaEngine } from './schema';
+import { prettyPrintArray } from '../../shared/string';
+import ShareUpdateTracker from '../plugins/share-update-tracker/share-update-tracker';
+import MemoryStore from '../stores/InMemoryStore';
 import Server from './server';
 import { createDependencyTree } from './share-dag';
-import { MemoryStore } from './store';
-import { prettyPrintArray } from '../../shared/string';
+import { UsersCollection } from '@fedmasses/shared/system-schema';
 
 test('dep list-1', async () => {
-  const server = new Server({
+  const server = await Server.create({
     store: new MemoryStore(data),
-    schema: new SchemaEngine(schema),
+    schemas: [TasksCollection, ListsCollection, UsersCollection],
+    plugins: [ShareUpdateTracker({ userCollection: 'users' })],
     identity: { url: 'http://test-server.com', public_key: 'asdf' },
   });
 
@@ -46,9 +48,10 @@ test('dep list-1', async () => {
 });
 
 test('dep list-2', async () => {
-  const server = new Server({
+  const server = await Server.create({
     store: new MemoryStore(data),
-    schema: new SchemaEngine(schema),
+    schemas: [TasksCollection, ListsCollection, UsersCollection],
+    plugins: [ShareUpdateTracker({ userCollection: 'users' })],
     identity: { url: 'http://test-server.com', public_key: 'asdf' },
   });
 
@@ -79,9 +82,10 @@ test('dep list-2', async () => {
 });
 
 test('dep list-3', async () => {
-  const server = new Server({
+  const server = await Server.create({
     store: new MemoryStore(data),
-    schema: new SchemaEngine(schema),
+    schemas: [TasksCollection, ListsCollection, UsersCollection],
+    plugins: [ShareUpdateTracker({ userCollection: 'users' })],
     identity: { url: 'http://test-server.com', public_key: 'asdf' },
   });
 
@@ -112,9 +116,10 @@ test('dep list-3', async () => {
 });
 
 test('dep task-3', async () => {
-  const server = new Server({
+  const server = await Server.create({
     store: new MemoryStore(data),
-    schema: new SchemaEngine(schema),
+    schemas: [TasksCollection, ListsCollection, UsersCollection],
+    plugins: [ShareUpdateTracker({ userCollection: 'users' })],
     identity: { url: 'http://test-server.com', public_key: 'asdf' },
   });
 

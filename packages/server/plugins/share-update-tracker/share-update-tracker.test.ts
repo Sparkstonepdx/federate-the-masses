@@ -1,12 +1,12 @@
+import { Schema } from '@fedmasses/shared/core-record-types';
+import { prettyList } from '@fedmasses/shared/string';
+import systemSchema from '@fedmasses/shared/system-schema';
 import { expect, test, vi } from 'vitest';
-import { RecordEngine } from '../lib/records';
-import { SchemaEngine } from '../lib/schema';
-import { HooksEngine } from '../lib/hooks';
+import { HooksEngine } from '../../lib/hooks';
+import { RecordEngine } from '../../lib/records';
+import { SchemaEngine } from '../../lib/schemaEngine';
+import MemoryStore from '../../stores/InMemoryStore';
 import { attachShareUpdateTracker, findRelatedRecords } from './share-update-tracker';
-import { MemoryStore } from '../lib/store';
-import systemSchema from '../../shared/system-schema';
-import { Schema } from '../../shared/core-record-types';
-import { prettyList, prettyPrint } from '../../shared/string';
 
 let schema: Record<string, Schema> = {
   ...systemSchema,

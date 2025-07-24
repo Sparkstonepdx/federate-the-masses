@@ -1,17 +1,34 @@
-import { SchemaField, ShareDependencies, ShareUpdates } from '../../shared/core-record-types';
-import { prettyPrint } from '../../shared/string';
-import { BaseParams, HookFnParams } from '../lib/hooks';
-import { Record, RecordEngine } from '../lib/records';
-import type Server from '../lib/server';
-import { createDependencyTree, deleteDependencyTree } from '../lib/share-dag';
+import { SchemaField, ShareDependencies, ShareUpdates } from '@fedmasses/shared/core-record-types';
+import { prettyPrint } from '@fedmasses/shared/string';
+import { BaseParams, HookFnParams } from '../../lib/hooks';
+import { CollectionRecord, RecordEngine } from '../../lib/records';
+import type Server from '../../lib/server';
+import { createDependencyTree, deleteDependencyTree } from '../../lib/share-dag';
+import {
+  createInvitesCollection,
+  ServersCollection,
+  ShareDependenciesCollection,
+  SharesCollection,
+  ShareSubscribersCollection,
+  ShareUpdatesCollection,
+} from './schemas';
 
-export default function ShareUpdateTracker() {
+export default function ShareUpdateTracker(opts: { userCollection: string }) {
+  if (!opts?.userCollection) throw new Error('opts.userCollection is a required field');
   return {
     name: 'share-update-tracker-plugin',
     setup(server: Server) {
       const onDestroy = attachShareUpdateTracker(server.records);
       server.onDestroy(onDestroy);
     },
+    schemas: [
+      SharesCollection,
+      ShareDependenciesCollection,
+      ShareSubscribersCollection,
+      ShareUpdatesCollection,
+      ServersCollection,
+      createInvitesCollection(opts.userCollection),
+    ],
   };
 }
 
@@ -29,11 +46,11 @@ export function attachShareUpdateTracker(records: RecordEngine) {
   };
 }
 
-type Reference = { relation_type: 'via' | 'field'; field: string; record: Record<any> };
+type Reference = { relation_type: 'via' | 'field'; field: string; record: CollectionRecord<any> };
 
 export async function findRelatedRecords<RecordType extends object = {}>(
   records: RecordEngine,
-  record: Record<RecordType>,
+  record: CollectionRecord<RecordType>,
   ignoreViaRecords?: boolean
 ) {
   let references: Reference[] = [];
@@ -73,7 +90,7 @@ export async function findRelatedRecords<RecordType extends object = {}>(
 export async function afterCreate(records: RecordEngine, params: BaseParams) {
   if (params.recordSchema.untrackSharing) return;
 
-  const record = new Record(params.recordSchema, params.recordData);
+  const record = new CollectionRecord(params.recordSchema, params.recordData);
   const relatedRecords = await findRelatedRecords(records, record, true);
 
   const relatedDependencies = await records.find<ShareDependencies>('share_dependencies', {
@@ -125,7 +142,7 @@ export async function afterCreate(records: RecordEngine, params: BaseParams) {
 export async function afterUpdate(records: RecordEngine, params: HookFnParams<any>['afterUpdate']) {
   if (params.recordSchema.untrackSharing) return;
 
-  const record = new Record<any>(params.recordSchema, params.recordData);
+  const record = new CollectionRecord<any>(params.recordSchema, params.recordData);
 
   const changedFields = new Set<{ name: string; schema: SchemaField }>();
 
@@ -196,7 +213,7 @@ export async function afterUpdate(records: RecordEngine, params: HookFnParams<an
 export async function afterDelete(records: RecordEngine, params: BaseParams) {
   if (params.recordSchema.untrackSharing) return;
 
-  const record = new Record(params.recordSchema, params.recordData);
+  const record = new CollectionRecord(params.recordSchema, params.recordData);
   const relatedDependencies = await records.find<ShareDependencies>('share_dependencies', {
     filter: `child_id = '${record.id}'`,
   });

@@ -1,11 +1,11 @@
 import { ShareDependencies, Shares, ShareUpdates } from '../../shared/core-record-types';
 import type Server from './server';
-import { Record, RecordEngine } from './records';
+import { CollectionRecord, RecordEngine } from './records';
 
 interface QueuedItem {
   collection: string;
   recordId: string;
-  parent: Record<any>;
+  parent: CollectionRecord<any>;
   field?: string;
   relation_type: 'via' | 'field';
 }
@@ -46,7 +46,7 @@ export async function createDependencyTree(
   }
 }
 
-async function getReferencedRecords(records: RecordEngine, record: Record<any>) {
+async function getReferencedRecords(records: RecordEngine, record: CollectionRecord<any>) {
   let queueItems: QueuedItem[] = [];
   for (const [fieldName, fieldSchema] of Object.entries(record.schema.fields)) {
     if (fieldSchema.type !== 'relation') continue;
@@ -83,7 +83,7 @@ async function getReferencedRecords(records: RecordEngine, record: Record<any>) 
 
 export async function deleteDependencyTree(
   records: RecordEngine,
-  record: Record<ShareDependencies>
+  record: CollectionRecord<ShareDependencies>
 ) {
   let children = await records.find<ShareDependencies>('share_dependencies', {
     filter: `parent_id = '${record.get('child_id')}' and share = '${record.get('share')}' `,

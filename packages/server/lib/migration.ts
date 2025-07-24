@@ -1,0 +1,3 @@
+interface Migration {
+  version: number;
+}

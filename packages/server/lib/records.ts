@@ -1,6 +1,6 @@
 import { RecordPage, Schema } from '../../shared/core-record-types';
 import { HooksEngine } from './hooks';
-import { SchemaEngine } from './schema';
+import { SchemaEngine } from './schemaEngine';
 import { FindOptions, RecordData, Store } from './store';
 import { prettyPrint } from '../../shared/string';
 import { generateURN } from '../../shared/urn';
@@ -36,7 +36,7 @@ export class RecordEngine {
     await this.store.set(collectionName, recordData.id, recordData);
     await this.hooks.run('afterCreate', collectionName, { recordData, recordSchema });
 
-    return new Record<RecordType>(recordSchema, recordData);
+    return new CollectionRecord<RecordType>(recordSchema, recordData);
   }
 
   async upsert<RecordType extends object = {}>(collectionName: string, id: string, data: object) {
@@ -74,7 +74,7 @@ export class RecordEngine {
       recordSchema,
       previousRecordData: existing,
     });
-    return new Record<RecordType>(recordSchema, recordData);
+    return new CollectionRecord<RecordType>(recordSchema, recordData);
   }
 
   async delete(collectionName: string, id: string) {
@@ -97,7 +97,7 @@ export class RecordEngine {
 
     if (!existing) return null;
 
-    return new Record<RecordType>(definition, existing);
+    return new CollectionRecord<RecordType>(definition, existing);
   }
 
   async list<RecordType extends object = {}>(collectionName: string) {
@@ -105,7 +105,7 @@ export class RecordEngine {
     return {
       ...result,
       records: result.records.map(
-        item => new Record<RecordType>(this.schema.get(collectionName), item)
+        item => new CollectionRecord<RecordType>(this.schema.get(collectionName), item)
       ),
     };
   }
@@ -116,7 +116,9 @@ export class RecordEngine {
     const result = (await this.store.find(collectionName, options)) as RecordPage<
       RecordType & RecordData
     >;
-    let records = result.records.map(item => new Record(this.schema.get(collectionName), item));
+    let records = result.records.map(
+      item => new CollectionRecord(this.schema.get(collectionName), item)
+    );
     if (options.expand) {
       await Promise.all(records.map(record => this.expand(record, options.expand!)));
     }
@@ -136,7 +138,7 @@ export class RecordEngine {
   }
 
   async expand<RecordType extends object = {}>(
-    record: Record<RecordType>,
+    record: CollectionRecord<RecordType>,
     paths: string[],
     depth = 3
   ) {
@@ -152,7 +154,7 @@ export class RecordEngine {
       if (fieldSchema.type !== 'relation') throw new Error('can only expand relation fields');
 
       let existingExpand = record?.expand?.[fk];
-      let queue: (Record<any> | null)[] = [];
+      let queue: (CollectionRecord<any> | null)[] = [];
 
       // if we've already expanded this node, lets add onto it
       if (existingExpand) {
@@ -184,7 +186,7 @@ export class RecordEngine {
   }
 }
 
-export class Record<RecordType extends object = {}> {
+export class CollectionRecord<RecordType extends object = {}> {
   private dirty: boolean = false;
   public expand: any;
 

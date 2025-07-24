@@ -1,12 +1,13 @@
 import { expect, test, vi } from 'vitest';
-import Server from './server';
-import { MemoryStore } from './store';
-import { SchemaEngine } from './schema';
+import Server, { MigratableSchema } from './server';
+import MemoryStore from '../stores/InMemoryStore';
+import { SchemaEngine } from './schemaEngine';
 import systemSchema from '../../shared/system-schema';
 import { Schema, Shares } from '../../shared/core-record-types';
 import { prettyPrint, prettyPrintArray } from '../../shared/string';
 import { FakeNetwork } from '../../end-to-end-tests/lib/fakeNetwork';
-import ShareUpdateTracker from '../plugins/share-update-tracker';
+import ShareUpdateTracker from '../plugins/share-update-tracker/share-update-tracker';
+import { UsersSchema } from './schemas/system';
 
 let baseFields = {
   id: 'string',
@@ -33,6 +34,34 @@ let schema: Record<string, Schema> = {
       folder: { type: 'relation', collection: 'folders' },
     },
   },
+};
+
+const FoldersSchema = {
+  collectionName: 'folders',
+  migrations: [
+    {
+      version: 1,
+      addFields: {
+        name: { type: 'string' },
+        parent: { type: 'relation', collection: 'folders' },
+        child_folders: { type: 'relation', collection: 'folders', via: 'parent' },
+        child_files: { type: 'relation', collection: 'documents', via: 'folder' },
+      },
+    },
+  ],
+};
+
+const DocumentsSchema: MigratableSchema = {
+  collectionName: 'documents',
+  migrations: [
+    {
+      version: 1,
+      addFields: {
+        title: { type: 'string' },
+        folder: { type: 'relation', collection: 'folders' },
+      },
+    },
+  ],
 };
 
 /*
@@ -68,7 +97,6 @@ Folder X (x)
 └── Folder Y (y)
     └── doc-5: "Summary"
 */
-
 let server2Data = {
   users: {
     p2: { id: 'p2@server2.com', name: 'Person 2' },
@@ -86,24 +114,26 @@ let server2Data = {
 test('can share and accept invite', async () => {
   const network = new FakeNetwork();
 
-  const server1 = new Server({
+  const server1 = await Server.create({
     store: new MemoryStore(server1Data),
-    schema: new SchemaEngine(schema),
     fetch: network.fetch,
     identity: {
       url: 'http://server1.com',
       public_key: '',
     },
-    plugins: [ShareUpdateTracker()],
+    plugins: [ShareUpdateTracker({ userCollection: 'users' })],
+    schemas: [FoldersSchema, DocumentsSchema],
   });
 
-  const server2 = new Server({
+  const server2 = await Server.create({
     fetch: network.fetch,
     store: new MemoryStore(server2Data),
-    schema: new SchemaEngine(schema),
     identity: { url: 'http://server2.com', public_key: '' },
-    plugins: [ShareUpdateTracker()],
+    plugins: [ShareUpdateTracker({ userCollection: 'users' })],
+    schemas: [FoldersSchema, DocumentsSchema],
   });
+
+  // await server2.runMigrations(schema);
 
   network.register('http://server1.com', server1);
   network.register('http://server2.com', server2);
@@ -128,23 +158,23 @@ test('can invite and complete initial sync', async () => {
   // node setup
   const network = new FakeNetwork();
 
-  const server1 = new Server({
+  const server1 = await Server.create({
     store: new MemoryStore(server1Data),
-    schema: new SchemaEngine(schema),
+    schemas: [FoldersSchema, DocumentsSchema, UsersSchema],
     fetch: network.fetch,
     identity: {
       url: 'http://server1.com',
       public_key: '',
     },
-    plugins: [ShareUpdateTracker()],
+    plugins: [ShareUpdateTracker({ userCollection: 'users' })],
   });
 
-  const server2 = new Server({
+  const server2 = await Server.create({
     fetch: network.fetch,
     store: new MemoryStore(server2Data),
-    schema: new SchemaEngine(schema),
+    schemas: [FoldersSchema, DocumentsSchema, UsersSchema],
     identity: { url: 'http://server2.com', public_key: '' },
-    plugins: [ShareUpdateTracker()],
+    plugins: [ShareUpdateTracker({ userCollection: 'users' })],
   });
 
   network.register('http://server1.com', server1);
@@ -186,23 +216,23 @@ test('can complete incremental sync from host after initial sync', async () => {
   const network = new FakeNetwork();
   const server1Store = new MemoryStore(server1Data);
 
-  const server1 = new Server({
+  const server1 = await Server.create({
     store: server1Store,
-    schema: new SchemaEngine(schema),
+    schemas: [FoldersSchema, DocumentsSchema],
     fetch: network.fetch,
     identity: {
       url: 'http://server1.com',
       public_key: '',
     },
-    plugins: [ShareUpdateTracker()],
+    plugins: [ShareUpdateTracker({ userCollection: 'users' })],
   });
 
-  const server2 = new Server({
+  const server2 = await Server.create({
     fetch: network.fetch,
     store: new MemoryStore(server2Data),
-    schema: new SchemaEngine(schema),
+    schemas: [FoldersSchema, DocumentsSchema],
     identity: { url: 'http://server2.com', public_key: '' },
-    plugins: [ShareUpdateTracker()],
+    plugins: [ShareUpdateTracker({ userCollection: 'users' })],
   });
 
   network.register('http://server1.com', server1);
@@ -251,23 +281,23 @@ test('can complete multiple incremental syncs from host after initial sync', asy
   const network = new FakeNetwork();
   const server1Store = new MemoryStore(server1Data);
 
-  const server1 = new Server({
+  const server1 = await Server.create({
     store: server1Store,
-    schema: new SchemaEngine(schema),
+    schemas: [FoldersSchema, DocumentsSchema],
     fetch: network.fetch,
     identity: {
       url: 'http://server1.com',
       public_key: '',
     },
-    plugins: [ShareUpdateTracker()],
+    plugins: [ShareUpdateTracker({ userCollection: 'users' })],
   });
 
-  const server2 = new Server({
+  const server2 = await Server.create({
     fetch: network.fetch,
     store: new MemoryStore(server2Data),
-    schema: new SchemaEngine(schema),
+    schemas: [FoldersSchema, DocumentsSchema],
     identity: { url: 'http://server2.com', public_key: '' },
-    plugins: [ShareUpdateTracker()],
+    plugins: [ShareUpdateTracker({ userCollection: 'users' })],
   });
 
   network.register('http://server1.com', server1);

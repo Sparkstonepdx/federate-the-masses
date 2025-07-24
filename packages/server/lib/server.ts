@@ -1,11 +1,12 @@
 import { Hono } from 'hono';
-import { Servers, Shares } from '../../shared/core-record-types';
+import { Schema, SchemaField, Servers, Shares } from '../../shared/core-record-types';
 import { Fetch } from '../../shared/types';
 import { generateId } from '../../shared/urn';
 import apiRouter from './api';
 import { HooksEngine } from './hooks';
-import { Record, RecordEngine } from './records';
-import { SchemaEngine } from './schema';
+import { CollectionRecord, RecordEngine } from './records';
+import { SchemaEngine } from './schemaEngine';
+import { FtmSystemKV, FtmSystemMigrations } from './schemas/system';
 import { createDependencyTree } from './share-dag';
 import { Store } from './store';
 
@@ -13,14 +14,36 @@ interface Context {
   auth: { record: { id: string } };
 }
 
+type MigrationContext = any;
+
+interface Migration {
+  version: number;
+  description?: string;
+  addFields?: Record<string, SchemaField>;
+  removeFields?: string[];
+  up?(ctx: MigrationContext): Promise<void>;
+}
+
+declare module 'hono' {
+  interface ContextVariableMap {
+    server: Server;
+  }
+}
+
 interface ServerPlugin {
   name: string;
   setup(server: Server): void;
 }
 
+export interface MigratableSchema {
+  collectionName: string;
+  untrackSharing?: boolean;
+  migrations: Migration[];
+}
+
 interface ConstructorOptions {
   store: Store;
-  schema: SchemaEngine;
+  schemas: MigratableSchema[];
   fetch?: any;
   identity: { url: string; public_key: string };
   plugins?: ServerPlugin[];
@@ -35,17 +58,103 @@ export default class Server {
   public records: RecordEngine;
   private cleanupFns: Function[] = [];
 
-  constructor(constructorOptions: ConstructorOptions) {
-    const options = constructorOptions;
-
+  private constructor(options: ConstructorOptions) {
     const url = new URL(options.identity.url);
 
-    this.schema = options.schema;
+    // this.schema = new SchemaEngine(options.schemas);
     this.store = options.store;
     this.fetch = options.fetch;
     this.identity = Object.assign(options.identity, { host: url.host, id: url.host });
-    this.records = new RecordEngine(this.store, this.schema, this.identity.host, new HooksEngine());
+  }
 
+  static async create(constructorOptions: ConstructorOptions) {
+    const server = new Server(constructorOptions);
+    await server.setupSchema(constructorOptions);
+    await server.setupPlugins(constructorOptions);
+    await server.attachRouter(constructorOptions);
+
+    return server;
+  }
+
+  private async setupSchema(options: ConstructorOptions) {
+    const systemMigrations = await this.store.list('ftm_system_migrations').catch(() => ({
+      records: [],
+    }));
+
+    const migrations = Object.fromEntries(
+      systemMigrations.records.map(record => [record.id, record])
+    );
+
+    const schemas = [FtmSystemMigrations, FtmSystemKV];
+
+    for (const plugin of options.plugins ?? []) {
+      if (plugin.schemas) {
+        schemas.push(...plugin.schemas);
+      }
+    }
+
+    schemas.push(...(options.schemas ?? []));
+
+    for (const schema of schemas) {
+      if (!migrations[schema.collectionName]) {
+        await this.store.createCollection(schema.collectionName, {
+          id: { type: 'string' },
+          modified_at: { type: 'datetime' },
+          created_at: { type: 'datetime' },
+        });
+        migrations[schema.collectionName] = { version: 0 };
+      }
+      for (let i = migrations[schema.collectionName].version; i < schema.migrations.length; i++) {
+        const migration = schema.migrations[i];
+        if (migration.removeFields) {
+          await this.store.removeFields(schema.collectionName, migration.removeFields);
+        }
+        await this.store.addFields(schema.collectionName, migration.addFields);
+      }
+      await this.store.set('ftm_system_migrations', schema.collectionName, {
+        version: schema.migrations.length,
+      });
+    }
+
+    // this.schema = options.schema ?? {
+    //   get(field: string) {
+    //     return this[field];
+    //   },
+    // };
+
+    const schemaLookup = {};
+
+    for (const schema of schemas) {
+      schema.fields ??= {};
+      for (const migration of schema.migrations) {
+        for (const field of migration.removeFields ?? []) {
+          delete schema.fields[field];
+        }
+        for (const [fieldName, field] of Object.entries(migration.addFields ?? {})) {
+          schema.fields[fieldName] = field;
+        }
+      }
+      schemaLookup[schema.collectionName] = schema;
+    }
+
+    // this.schema = new SchemaEngine(schemaLookup);
+
+    this.schema = Object.assign(schemaLookup, {
+      get(field: string) {
+        return this[field];
+      },
+    });
+
+    this.records = new RecordEngine(this.store, this.schema, this.identity.host, new HooksEngine());
+  }
+
+  private async setupPlugins(options: ConstructorOptions) {
+    for (const plugin of options.plugins ?? []) {
+      plugin.setup(this);
+    }
+  }
+
+  private async attachRouter(options: ConstructorOptions) {
     const honoRouter = new Hono();
     honoRouter.use(async (c, next) => {
       c.set('server', this);
@@ -55,10 +164,6 @@ export default class Server {
     honoRouter.route('/api', apiRouter);
 
     this.honoRouter = honoRouter;
-
-    for (const plugin of options.plugins ?? []) {
-      plugin.setup(this);
-    }
   }
 
   async getIdentity() {
@@ -101,7 +206,7 @@ export default class Server {
     }
 
     const jsonResponse = await response.json();
-    server = new Record<Servers>(this.schema.get('servers'), jsonResponse);
+    server = new CollectionRecord<Servers>(this.schema.get('servers'), jsonResponse);
     await this.records.create('servers', server.data());
     return server;
   }
@@ -122,7 +227,7 @@ export default class Server {
     });
   }
 
-  async initialSync(share: Record<Shares>) {
+  async initialSync(share: CollectionRecord<Shares>) {
     await this.records.expand(share, ['server']);
 
     const url = new URL(`/api/share/${share.id}/sync/initial`, share.expand.server.get('url'));
@@ -213,11 +318,5 @@ export default class Server {
 
   onDestroy(callback: Function) {
     this.cleanupFns.push(callback);
-  }
-}
-
-declare module 'hono' {
-  interface ContextVariableMap {
-    server: Server;
   }
 }

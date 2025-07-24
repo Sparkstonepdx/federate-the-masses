@@ -1,8 +1,8 @@
 import { omit, pick } from 'lodash-es';
-import { Record } from '../server/lib/records';
+import { CollectionRecord } from '../server/lib/records';
 
 export function prettyPrint<RecordType extends object = {}>(
-  record?: Record<RecordType> | null,
+  record?: CollectionRecord<RecordType> | null,
   pickFields?: string[]
 ) {
   if (!record) return `[] ${record}`;
@@ -16,11 +16,14 @@ export function prettyPrint<RecordType extends object = {}>(
   return `[${record.collection}:${record.id}] ${prettyData.join(', ')}`;
 }
 
-export function prettyPrintArray(arr: Record[]) {
+export function prettyPrintArray(arr: CollectionRecord[]) {
   return arr.map(record => prettyPrint(record)).join('\n');
 }
 
-export async function prettyList(promise: Promise<{ records: Record[] }>, pickFields?: string[]) {
+export async function prettyList(
+  promise: Promise<{ records: CollectionRecord[] }>,
+  pickFields?: string[]
+) {
   const result = await promise;
   return {
     ...result,

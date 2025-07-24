@@ -11,6 +11,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.12.1",
   "dependencies": {
-    "vitest": "^3.2.3"
+    "vitest": "^3.2.3",
+    "@fedmasses/server": "workspace:*"
   }
 }

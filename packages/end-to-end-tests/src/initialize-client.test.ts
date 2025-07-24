@@ -1,18 +1,20 @@
-import { test, expect, vi } from 'vitest';
-import Server from '../../server/lib/server';
-import { MemoryStore } from '../../server/lib/store';
+import ShareUpdateTracker from '@fedmasses/server/plugins/share-update-tracker/share-update-tracker';
+import MemoryStore from '@fedmasses/server/stores/InMemoryStore';
+import { expect, test, vi } from 'vitest';
 import Client from '../../client/src/main';
-import { SchemaEngine } from '../../server/lib/schema';
+import Server from '../../server/lib/server';
+import { UsersCollection } from '../../shared/system-schema';
 import { FakeNetwork } from '../lib/fakeNetwork';
-import { data, schema } from '../lib/mock-data/tasks';
+import { data, ListsCollection, TasksCollection } from '../lib/mock-data/tasks';
 
 test('can get metadata', async () => {
   const network = new FakeNetwork();
   const client = new Client({ fetch: network.fetch });
 
-  const server = new Server({
+  const server = await Server.create({
     store: new MemoryStore(data),
-    schema: new SchemaEngine(schema),
+    schemas: [TasksCollection, ListsCollection, UsersCollection],
+    plugins: [ShareUpdateTracker({ userCollection: 'users' })],
     fetch: network.fetch,
     identity: {
       url: 'http://server1.com',
@@ -54,16 +56,32 @@ test('can get metadata', async () => {
           "type": "string",
         },
       },
-      "referencedBy": {
-        "lists": true,
-        "tasks": true,
-      },
-      "references": [
-        "lists.lists",
-        "lists.tasks",
-        "lists.lists",
-        "tasks",
-        "tasks",
+      "migrations": [
+        {
+          "addFields": {
+            "child": {
+              "collection": "tasks",
+              "type": "relation",
+              "via": "parent",
+            },
+            "content": {
+              "required": true,
+              "type": "string",
+            },
+            "list": {
+              "collection": "lists",
+              "required": true,
+              "type": "relation",
+            },
+            "parent": {
+              "collection": "tasks",
+              "type": "relation",
+            },
+            "title": {
+              "type": "string",
+            },
+          },
+        },
       ],
     }
   `);
@@ -73,9 +91,10 @@ test('can getFullList', async () => {
   const network = new FakeNetwork();
   const client = new Client({ fetch: network.fetch });
 
-  const server = new Server({
+  const server = await Server.create({
     store: new MemoryStore(data),
-    schema: new SchemaEngine(schema),
+    schemas: [TasksCollection, ListsCollection, UsersCollection],
+    plugins: [ShareUpdateTracker({ userCollection: 'users' })],
     fetch: network.fetch,
     identity: {
       url: 'http://server1.com',
@@ -143,9 +162,10 @@ test('can findAll with filter', async () => {
   const network = new FakeNetwork();
   const client = new Client({ fetch: network.fetch });
 
-  const server = new Server({
+  const server = await Server.create({
     store: new MemoryStore(data),
-    schema: new SchemaEngine(schema),
+    schemas: [TasksCollection, ListsCollection, UsersCollection],
+    plugins: [ShareUpdateTracker({ userCollection: 'users' })],
     fetch: network.fetch,
     identity: {
       url: 'http://server1.com',
@@ -226,9 +246,10 @@ test('can findAll with paging', async () => {
   const network = new FakeNetwork();
   const client = new Client({ fetch: network.fetch });
 
-  const server = new Server({
+  const server = await Server.create({
     store: new MemoryStore(data),
-    schema: new SchemaEngine(schema),
+    schemas: [TasksCollection, ListsCollection, UsersCollection],
+    plugins: [ShareUpdateTracker({ userCollection: 'users' })],
     fetch: network.fetch,
     identity: {
       url: 'http://server1.com',
@@ -298,9 +319,10 @@ test('can find with paging', async () => {
   const network = new FakeNetwork();
   const client = new Client({ fetch: network.fetch });
 
-  const server = new Server({
+  const server = await Server.create({
     store: new MemoryStore(data),
-    schema: new SchemaEngine(schema),
+    schemas: [TasksCollection, ListsCollection, UsersCollection],
+    plugins: [ShareUpdateTracker({ userCollection: 'users' })],
     fetch: network.fetch,
     identity: {
       url: 'http://server1.com',
@@ -353,9 +375,10 @@ test('can findOne with paging', async () => {
   const network = new FakeNetwork();
   const client = new Client({ fetch: network.fetch });
 
-  const server = new Server({
+  const server = await Server.create({
     store: new MemoryStore(data),
-    schema: new SchemaEngine(schema),
+    schemas: [TasksCollection, ListsCollection, UsersCollection],
+    plugins: [ShareUpdateTracker({ userCollection: 'users' })],
     fetch: network.fetch,
     identity: {
       url: 'http://server1.com',
@@ -398,9 +421,10 @@ test('can create record', async () => {
   const network = new FakeNetwork();
   const client = new Client({ fetch: network.fetch });
 
-  const server = new Server({
+  const server = await Server.create({
     store: new MemoryStore(data),
-    schema: new SchemaEngine(schema),
+    schemas: [TasksCollection, ListsCollection, UsersCollection],
+    plugins: [ShareUpdateTracker({ userCollection: 'users' })],
     fetch: network.fetch,
     identity: {
       url: 'http://server1.com',
@@ -442,9 +466,10 @@ test('can upsert, update, and delete record', async () => {
   const network = new FakeNetwork();
   const client = new Client({ fetch: network.fetch });
 
-  const server = new Server({
+  const server = await Server.create({
     store: new MemoryStore(data),
-    schema: new SchemaEngine(schema),
+    schemas: [TasksCollection, ListsCollection, UsersCollection],
+    plugins: [ShareUpdateTracker({ userCollection: 'users' })],
     fetch: network.fetch,
     identity: {
       url: 'http://server1.com',

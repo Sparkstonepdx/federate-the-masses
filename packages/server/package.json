@@ -11,13 +11,15 @@
   },
   "devDependencies": {
     "typescript": "~5.8.3",
-    "vite": "^6.3.5",
-    "vitest": "^3.2.3"
+    "vite": "^7.0.5",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
     "@types/lodash-es": "^4.17.12",
-    "hono": "^4.7.11",
-    "lodash-es": "^4.17.21"
+    "better-sqlite3": "^12.2.0",
+    "hono": "^4.8.5",
+    "lodash-es": "^4.17.21",
+    "@fedmasses/shared": "workspace:*"
   },
   "prettier": {
     "jsxSingleQuote": true,

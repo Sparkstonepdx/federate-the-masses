@@ -1,9 +1,9 @@
-import { SchemaEngine } from '../../../packages/experiments/lib/schema';
-import Server from '../../../packages/experiments/lib/server';
-import { MemoryStore } from '../../../packages/experiments/lib/store';
+import { SchemaEngine } from '../../../packages/server/lib/schemaEngine';
+import Server from '../../../packages/server/lib/server';
+import MemoryStore from '../../../packages/server/stores/InMemoryStore';
 import systemSchema from '../../../packages/shared/system-schema';
 
-const server = new Server({
+const server = await Server.create({
   store: new MemoryStore(),
   schema: new SchemaEngine({
     ...systemSchema,
