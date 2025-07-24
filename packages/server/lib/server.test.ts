@@ -1,39 +1,17 @@
 import { expect, test, vi } from 'vitest';
-import Server, { MigratableSchema } from './server';
-import MemoryStore from '../stores/InMemoryStore';
-import { SchemaEngine } from './schemaEngine';
-import systemSchema from '../../shared/system-schema';
-import { Schema, Shares } from '../../shared/core-record-types';
-import { prettyPrint, prettyPrintArray } from '../../shared/string';
 import { FakeNetwork } from '../../end-to-end-tests/lib/fakeNetwork';
+import { Shares } from '../../shared/core-record-types';
+import { prettyPrint, prettyPrintArray } from '../../shared/string';
 import ShareUpdateTracker from '../plugins/share-update-tracker/share-update-tracker';
+import MemoryStore from '../stores/InMemoryStore';
 import { UsersSchema } from './schemas/system';
+import Server, { MigratableSchema } from './server';
 
 let baseFields = {
   id: 'string',
   created_at: 'string',
   modified_at: 'string',
   is_deleted: 'boolean',
-};
-
-let schema: Record<string, Schema> = {
-  ...systemSchema,
-  folders: {
-    collectionName: 'folders',
-    fields: {
-      name: { type: 'string' },
-      parent: { type: 'relation', collection: 'folders' },
-      child_folders: { type: 'relation', collection: 'folders', via: 'parent' },
-      child_files: { type: 'relation', collection: 'documents', via: 'folder' },
-    },
-  },
-  documents: {
-    collectionName: 'documents',
-    fields: {
-      title: { type: 'string' },
-      folder: { type: 'relation', collection: 'folders' },
-    },
-  },
 };
 
 const FoldersSchema = {
